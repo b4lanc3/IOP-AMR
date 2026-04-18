@@ -1,0 +1,9 @@
+float32 cpu_percent
+float32 gpu_percent
+float32 ram_used_mb
+float32 ram_total_mb
+float32 cpu_temp_c
+float32 gpu_temp_c
+float32 disk_used_gb
+float32 disk_total_gb
+builtin_interfaces/Time stamp

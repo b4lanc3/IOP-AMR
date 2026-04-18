@@ -1,0 +1,18 @@
+﻿# Gi?i h?n scope Cursor khi m? folder jetson/ standalone.
+
+# Build artifacts
+build/
+install/
+log/
+**/__pycache__/
+*.pyc
+*.pyo
+
+# Rosbag recordings co the rat nang
+bags/
+*.db3
+*.mcap
+
+# IDE
+.vscode/
+.idea/

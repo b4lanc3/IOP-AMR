@@ -1,0 +1,7 @@
+string action
+string bag_name
+string[] topics
+---
+bool success
+string message
+string[] bags

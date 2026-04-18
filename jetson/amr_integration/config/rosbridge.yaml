@@ -1,0 +1,7 @@
+rosbridge_websocket:
+  ros__parameters:
+    port: 9090
+    address: 0.0.0.0
+    use_compression: false
+    call_service_timeout: 5.0
+    send_action_goals_in_new_thread: true

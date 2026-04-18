@@ -1,0 +1,16 @@
+[Unit]
+Description=AMR integration (rosbridge + web_video + monitor + estop + bagger)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User={{USER}}
+Environment="ROS_DOMAIN_ID={{ROS_DOMAIN_ID}}"
+ExecStart=/bin/bash -lc 'source /opt/ros/humble/setup.bash && source {{WS_PATH}}/install/setup.bash && exec ros2 launch amr_integration full.launch.py'
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=15
+
+[Install]
+WantedBy=multi-user.target
