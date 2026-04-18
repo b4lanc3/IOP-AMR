@@ -6,9 +6,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gamepads/gamepads.dart';
 
 import '../../core/gamepad/flydigi_mapper.dart';
+import '../../core/providers/settings_provider.dart';
 import '../../core/ros/msg_types.dart';
 import '../../core/ros/ros_client.dart';
 import '../../core/ros/topics.dart';
+import '../../core/storage/hive_boxes.dart';
+import '../../core/storage/models/gamepad_profile.dart';
 
 class TeleopScreen extends ConsumerStatefulWidget {
   const TeleopScreen({super.key});
@@ -18,11 +21,10 @@ class TeleopScreen extends ConsumerStatefulWidget {
 }
 
 class _TeleopScreenState extends ConsumerState<TeleopScreen> {
-  final _mapper = FlydigiMapper();
+  late FlydigiMapper _mapper;
   StreamSubscription<GamepadEvent>? _padSub;
   Timer? _publishTimer;
 
-  // Joystick ảo: stick trái = linear, stick phải = angular
   double _joyLinear = 0;
   double _joyAngular = 0;
 
@@ -30,30 +32,52 @@ class _TeleopScreenState extends ConsumerState<TeleopScreen> {
   double _maxAngular = 1.2;
 
   bool _estop = false;
+  String _lastSource = 'idle';
 
   @override
   void initState() {
     super.initState();
+    final settings = ref.read(appSettingsProvider);
+    _maxLinear = settings.defaultMaxLinear;
+    _maxAngular = settings.defaultMaxAngular;
+
+    final profileId = settings.activeGamepadProfileId;
+    final profile = (profileId != null
+            ? HiveBoxes.gamepadProfiles.get(profileId)
+            : HiveBoxes.gamepadProfiles.values.firstOrNull) ??
+        GamepadProfile(id: 'default', name: 'Default');
+    _mapper = FlydigiMapper(profile);
+
     _padSub = Gamepads.events.listen(_onGamepadEvent);
-    _publishTimer = Timer.periodic(const Duration(milliseconds: 67), (_) => _publish()); // ~15 Hz
+    _restartPublishTimer(settings.teleopPublishHz);
+  }
+
+  void _restartPublishTimer(int hz) {
+    _publishTimer?.cancel();
+    final periodMs = (1000 / hz).round();
+    _publishTimer = Timer.periodic(
+      Duration(milliseconds: periodMs),
+      (_) => _publish(),
+    );
   }
 
   void _onGamepadEvent(GamepadEvent event) {
     if (_mapper.update(event)) return;
-    final action = FlydigiMapper.detectAction(event);
+    final action = _mapper.detectAction(event);
     if (action == null) return;
     setState(() {
       switch (action) {
         case GamepadAction.toggleEstop:
           _estop = !_estop;
-          break;
         case GamepadAction.speedUp:
           _maxLinear = (_maxLinear + 0.05).clamp(0.05, 1.5);
-          break;
         case GamepadAction.speedDown:
           _maxLinear = (_maxLinear - 0.05).clamp(0.05, 1.5);
-          break;
-        default:
+        case GamepadAction.cycleMode:
+        case GamepadAction.snapshot:
+        case GamepadAction.saveWaypoint:
+        case GamepadAction.menu:
+        case GamepadAction.home:
           break;
       }
     });
@@ -68,15 +92,25 @@ class _TeleopScreenState extends ConsumerState<TeleopScreen> {
     if (_estop) {
       lin = 0;
       ang = 0;
+      _lastSource = 'estop';
     } else {
-      final gamepadTwist = _mapper.currentTwist();
-      final gLin = gamepadTwist.linear.x;
-      final gAng = gamepadTwist.angular.z;
-      // Nếu gamepad có input thì ưu tiên, ngược lại dùng joystick ảo
-      lin = gLin.abs() > 0.01 ? gLin : (-_joyLinear * _maxLinear);
-      ang = gAng.abs() > 0.01 ? gAng : (-_joyAngular * _maxAngular);
+      final g = _mapper.currentTwist(
+          maxLinear: _maxLinear, maxAngular: _maxAngular);
+      if (g.linear.x.abs() > 0.01 || g.angular.z.abs() > 0.01) {
+        lin = g.linear.x;
+        ang = g.angular.z;
+        _lastSource = 'gamepad';
+      } else if (_joyLinear.abs() > 0.01 || _joyAngular.abs() > 0.01) {
+        lin = -_joyLinear * _maxLinear;
+        ang = -_joyAngular * _maxAngular;
+        _lastSource = 'joystick';
+      } else {
+        lin = 0;
+        ang = 0;
+        _lastSource = 'idle';
+      }
     }
-    await client.publish(
+    client.publish(
       topic: RosTopics.cmdVel,
       type: RosTypes.twist,
       msg: Twist.fromLinAng(lin, ang).toJson(),
@@ -92,11 +126,17 @@ class _TeleopScreenState extends ConsumerState<TeleopScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final hz = ref.watch(appSettingsProvider.select((s) => s.teleopPublishHz));
+    if (hz != (_publishTimer?.tick != null ? hz : hz)) {
+      // Đơn giản hoá: luôn restart khi rebuild — ít chi phí vì Timer tạo nhẹ.
+      _restartPublishTimer(hz);
+    }
     return Padding(
       padding: const EdgeInsets.all(24),
       child: Column(
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Expanded(
                 child: SwitchListTile(
@@ -104,25 +144,31 @@ class _TeleopScreenState extends ConsumerState<TeleopScreen> {
                   subtitle: const Text('Dừng toàn bộ chuyển động'),
                   value: _estop,
                   onChanged: (v) => setState(() => _estop = v),
-                  secondary: Icon(Icons.stop_circle, color: _estop ? Colors.red : null),
+                  secondary: Icon(Icons.stop_circle,
+                      color: _estop ? Colors.red : null),
                 ),
               ),
               SizedBox(
-                width: 200,
+                width: 220,
                 child: Column(
                   children: [
                     Text('Max linear: ${_maxLinear.toStringAsFixed(2)} m/s'),
                     Slider(
                       value: _maxLinear,
-                      min: 0.05, max: 1.5,
+                      min: 0.05,
+                      max: 1.5,
                       onChanged: (v) => setState(() => _maxLinear = v),
                     ),
-                    Text('Max angular: ${_maxAngular.toStringAsFixed(2)} rad/s'),
+                    Text(
+                        'Max angular: ${_maxAngular.toStringAsFixed(2)} rad/s'),
                     Slider(
                       value: _maxAngular,
-                      min: 0.1, max: 2.5,
+                      min: 0.1,
+                      max: 2.5,
                       onChanged: (v) => setState(() => _maxAngular = v),
                     ),
+                    Text('Source: $_lastSource · $hz Hz',
+                        style: Theme.of(context).textTheme.bodySmall),
                   ],
                 ),
               ),

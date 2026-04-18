@@ -2,13 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/ros/msg_types.dart';
 import '../../core/ros/ros_client.dart';
+import '../../core/ros/topics.dart';
 
 /// Layout chính có navigation rail + content area.
-class MainShell extends ConsumerWidget {
+class MainShell extends ConsumerStatefulWidget {
   const MainShell({super.key, required this.child});
-
   final Widget child;
+
+  @override
+  ConsumerState<MainShell> createState() => _MainShellState();
+}
+
+class _MainShellState extends ConsumerState<MainShell> {
+  bool _estopEngaged = false;
 
   static const _destinations = <_NavItem>[
     _NavItem(route: '/dashboard',  icon: Icons.dashboard_outlined,   label: 'Dashboard'),
@@ -22,21 +30,50 @@ class MainShell extends ConsumerWidget {
     _NavItem(route: '/params',     icon: Icons.tune,                 label: 'Params'),
     _NavItem(route: '/logs',       icon: Icons.history,              label: 'Logs'),
     _NavItem(route: '/fleet',      icon: Icons.hub_outlined,         label: 'Fleet'),
+    _NavItem(route: '/settings',   icon: Icons.settings_outlined,    label: 'Settings'),
   ];
 
+  Future<void> _toggleEstop() async {
+    final client = ref.read(activeRosClientProvider);
+    if (client == null) return;
+    final next = !_estopEngaged;
+    setState(() => _estopEngaged = next);
+    client.publish(
+      topic: RosTopics.cmdVel,
+      type: RosTypes.twist,
+      msg: const Twist.zero().toJson(),
+    );
+    try {
+      await client.callService(
+        name: RosServices.estop,
+        type: RosTypes.estopSrv,
+        request: {'engage': next},
+        timeout: const Duration(seconds: 3),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('E-stop service lỗi: $e')),
+        );
+      }
+    }
+  }
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final location = GoRouterState.of(context).uri.path;
-    final selectedIndex =
-        _destinations.indexWhere((d) => location.startsWith(d.route)).clamp(0, 999);
+    final selectedIndex = _destinations
+        .indexWhere((d) => location.startsWith(d.route))
+        .clamp(0, 999);
     final client = ref.watch(activeRosClientProvider);
-    final isWide = MediaQuery.of(context).size.width >= 720;
+    final isWide = MediaQuery.of(context).size.width >= 900;
+    final safeIndex = selectedIndex == -1 ? 0 : selectedIndex;
 
     final body = Row(
       children: [
         if (isWide)
           NavigationRail(
-            selectedIndex: selectedIndex == -1 ? 0 : selectedIndex,
+            selectedIndex: safeIndex >= _destinations.length ? 0 : safeIndex,
             onDestinationSelected: (i) => context.go(_destinations[i].route),
             labelType: NavigationRailLabelType.all,
             destinations: [
@@ -48,15 +85,22 @@ class MainShell extends ConsumerWidget {
             ],
           ),
         if (isWide) const VerticalDivider(width: 1),
-        Expanded(child: child),
+        Expanded(child: widget.child),
       ],
     );
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(client?.profile.name ?? 'IOP-AMR'),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.smart_toy_outlined),
+            const SizedBox(width: 8),
+            Text(client?.profile.name ?? 'IOP-AMR'),
+          ],
+        ),
         actions: [
-          _ConnectionStatusChip(),
+          const _ConnectionStatusChip(),
           IconButton(
             tooltip: 'Chuyển robot',
             icon: const Icon(Icons.swap_horiz),
@@ -65,11 +109,24 @@ class MainShell extends ConsumerWidget {
         ],
       ),
       body: body,
+      floatingActionButton: client == null
+          ? null
+          : FloatingActionButton.extended(
+              onPressed: _toggleEstop,
+              backgroundColor:
+                  _estopEngaged ? Colors.red : Colors.orange.shade700,
+              foregroundColor: Colors.white,
+              icon: Icon(_estopEngaged
+                  ? Icons.emergency
+                  : Icons.warning_amber_rounded),
+              label: Text(_estopEngaged ? 'E-STOP ON' : 'E-STOP'),
+            ),
       bottomNavigationBar: isWide
           ? null
           : NavigationBar(
-              selectedIndex: selectedIndex == -1 ? 0 : selectedIndex,
-              onDestinationSelected: (i) => context.go(_destinations[i].route),
+              selectedIndex: safeIndex.clamp(0, 4),
+              onDestinationSelected: (i) =>
+                  context.go(_destinations[i].route),
               destinations: [
                 for (final d in _destinations.take(5))
                   NavigationDestination(icon: Icon(d.icon), label: d.label),
@@ -83,17 +140,18 @@ class _NavItem {
   final String route;
   final IconData icon;
   final String label;
-  const _NavItem({required this.route, required this.icon, required this.label});
+  const _NavItem({
+    required this.route,
+    required this.icon,
+    required this.label,
+  });
 }
 
-class _ConnectionStatusChip extends ConsumerStatefulWidget {
-  @override
-  ConsumerState<_ConnectionStatusChip> createState() => _ConnectionStatusChipState();
-}
+class _ConnectionStatusChip extends ConsumerWidget {
+  const _ConnectionStatusChip();
 
-class _ConnectionStatusChipState extends ConsumerState<_ConnectionStatusChip> {
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final client = ref.watch(activeRosClientProvider);
     if (client == null) {
       return const Padding(
@@ -101,25 +159,20 @@ class _ConnectionStatusChipState extends ConsumerState<_ConnectionStatusChip> {
         child: Chip(label: Text('Chưa kết nối')),
       );
     }
-    return StreamBuilder<RosConnectionStatus>(
-      stream: client.status,
-      initialData: client.currentStatus,
-      builder: (context, snap) {
-        final s = snap.data ?? RosConnectionStatus.disconnected;
-        final (color, text) = switch (s) {
-          RosConnectionStatus.connected   => (Colors.green,  'Kết nối'),
-          RosConnectionStatus.connecting  => (Colors.orange, 'Đang kết nối…'),
-          RosConnectionStatus.error       => (Colors.red,    'Lỗi'),
-          RosConnectionStatus.disconnected=> (Colors.grey,   'Mất kết nối'),
-        };
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          child: Chip(
-            avatar: CircleAvatar(backgroundColor: color, radius: 6),
-            label: Text(text),
-          ),
-        );
-      },
+    final statusAsync = ref.watch(activeRosStatusProvider);
+    final s = statusAsync.value ?? client.currentStatus;
+    final (color, text) = switch (s) {
+      RosConnectionStatus.connected => (Colors.green, 'Kết nối'),
+      RosConnectionStatus.connecting => (Colors.orange, 'Đang kết nối…'),
+      RosConnectionStatus.error => (Colors.red, 'Lỗi'),
+      RosConnectionStatus.disconnected => (Colors.grey, 'Mất kết nối'),
+    };
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: Chip(
+        avatar: CircleAvatar(backgroundColor: color, radius: 6),
+        label: Text(text),
+      ),
     );
   }
 }
