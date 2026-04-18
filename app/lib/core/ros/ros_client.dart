@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../storage/models/robot_profile.dart';
 import 'rosbridge_client.dart';
-import 'rosbridge_protocol.dart';
 
 export 'rosbridge_client.dart'
     show
