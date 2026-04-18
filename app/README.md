@@ -53,3 +53,16 @@ flutter build apk --release          # Android
 flutter build windows --release      # Windows exe
 flutter build web --release          # PWA
 ```
+
+### Linux (Ubuntu 22.04.5)
+
+Chi tiết xem [`../docs/SETUP_LINUX.md`](../docs/SETUP_LINUX.md). Tóm tắt:
+
+```bash
+cd app
+chmod +x scripts/build_linux_release.sh
+./scripts/build_linux_release.sh --deps   # lần đầu: cài apt deps + build
+# output:
+#   dist/IOP-AMR-Control-linux-x64.tar.gz  (portable)
+#   dist/iop-amr-control_1.0.0_amd64.deb   (cài: sudo dpkg -i ...)
+```

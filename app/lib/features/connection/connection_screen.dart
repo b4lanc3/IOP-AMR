@@ -10,6 +10,8 @@ import '../../core/providers/connection_provider.dart';
 import '../../core/ros/ros_client.dart';
 import '../../core/storage/hive_boxes.dart';
 import '../../core/storage/models/robot_profile.dart';
+import '../../core/theme/app_theme.dart';
+import '../../core/theme/ui_kit.dart';
 
 class ConnectionScreen extends ConsumerStatefulWidget {
   const ConnectionScreen({super.key});
@@ -126,76 +128,33 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
           if (robots.isEmpty) return const _EmptyState();
           final sorted = robots.toList()
             ..sort((a, b) => a.name.compareTo(b.name));
-          final scheme = Theme.of(context).colorScheme;
           return CustomScrollView(
             slivers: [
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          scheme.primary.withValues(alpha: 0.12),
-                          scheme.tertiary.withValues(alpha: 0.08),
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+                  child: HeroBanner(
+                    title: 'Fleet & kết nối',
+                    subtitle:
+                        'Chọn robot để làm việc, hoặc thêm IP thủ công / quét mDNS. '
+                        'Sau khi nối rosbridge, app sẽ nhớ profile trên máy này.',
+                    icon: Icons.hub_rounded,
+                    chips: [
+                      _HeroChip(
+                        icon: Icons.smart_toy_rounded,
+                        label: '${sorted.length} robot đã lưu',
+                        color: AppTheme.brandAccent,
                       ),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: scheme.outlineVariant.withValues(alpha: 0.4),
+                      const _HeroChip(
+                        icon: Icons.cable_rounded,
+                        label: 'rosbridge 9090 · video 8080',
+                        color: AppTheme.brandPrimary,
                       ),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(Icons.hub_rounded,
-                                  color: scheme.primary, size: 28),
-                              const SizedBox(width: 12),
-                              Text(
-                                'Fleet & kết nối',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .titleLarge
-                                    ?.copyWith(fontWeight: FontWeight.bold),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Chọn robot để làm việc, hoặc thêm IP thủ công / quét mDNS. '
-                            'Sau khi nối rosbridge, app sẽ nhớ profile trên máy này.',
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  color: scheme.onSurfaceVariant,
-                                  height: 1.35,
-                                ),
-                          ),
-                          const SizedBox(height: 12),
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: [
-                              Chip(
-                                avatar: Icon(Icons.numbers, size: 18, color: scheme.secondary),
-                                label: Text('${sorted.length} robot đã lưu'),
-                              ),
-                              Chip(
-                                avatar: Icon(Icons.cable_rounded, size: 18, color: scheme.tertiary),
-                                label: const Text('rosbridge 9090 · video 8080 (mặc định)'),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
+                    ],
                   ),
                 ),
               ),
+              const SliverToBoxAdapter(child: _NetworkHintCard()),
               SliverPadding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 88),
                 sliver: SliverList.separated(
@@ -273,32 +232,73 @@ class _RobotCardState extends State<_RobotCard> {
   @override
   Widget build(BuildContext context) {
     final p = widget.profile;
+    final scheme = Theme.of(context).colorScheme;
+    final isTailscale = p.host.startsWith('100.');
+    final netColor =
+        isTailscale ? AppTheme.brandAccent : AppTheme.brandSuccess;
+    final netLabel = isTailscale ? 'Tailscale' : 'LAN';
+
     return Card(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
         child: Row(
           children: [
-            CircleAvatar(
-              backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-              child: Icon(Icons.smart_toy_outlined,
-                  color: Theme.of(context).colorScheme.onPrimaryContainer),
+            const GradientIconBadge(
+              icon: Icons.smart_toy_rounded,
+              size: 44,
+              radius: 14,
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(p.name,
-                      style: const TextStyle(
-                          fontSize: 16, fontWeight: FontWeight.w600)),
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          p.name,
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleMedium
+                              ?.copyWith(fontWeight: FontWeight.w700),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      _MiniBadge(label: netLabel, color: netColor),
+                    ],
+                  ),
                   const SizedBox(height: 2),
-                  Text(p.websocketUrl,
-                      style: Theme.of(context).textTheme.bodySmall),
                   Text(
-                    'ns: ${p.namespace.isEmpty ? "—" : p.namespace}'
-                    '   |   video:${p.videoPort}'
-                    '${_pingResult != null ? "   |   ping: $_pingResult" : ""}',
-                    style: Theme.of(context).textTheme.bodySmall,
+                    p.websocketUrl,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: scheme.onSurfaceVariant,
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                        ),
+                  ),
+                  const SizedBox(height: 4),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 4,
+                    children: [
+                      _MiniPill(
+                        icon: Icons.folder_outlined,
+                        label: 'ns ${p.namespace.isEmpty ? "—" : p.namespace}',
+                      ),
+                      _MiniPill(
+                        icon: Icons.videocam_outlined,
+                        label: 'video ${p.videoPort}',
+                      ),
+                      if (_pingResult != null)
+                        _MiniPill(
+                          icon: Icons.network_ping,
+                          label: 'ping $_pingResult',
+                          color: _pingResult == 'không reach'
+                              ? scheme.error
+                              : AppTheme.brandSuccess,
+                        ),
+                    ],
                   ),
                 ],
               ),
@@ -326,12 +326,183 @@ class _RobotCardState extends State<_RobotCard> {
             const SizedBox(width: 4),
             FilledButton.icon(
               onPressed: widget.onConnect,
-              icon: const Icon(Icons.link),
+              icon: const Icon(Icons.link_rounded),
               label: const Text('Kết nối'),
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _MiniBadge extends StatelessWidget {
+  const _MiniBadge({required this.label, required this.color});
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
+      ),
+      child: Text(
+        label,
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: color,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.2,
+            ),
+      ),
+    );
+  }
+}
+
+class _MiniPill extends StatelessWidget {
+  const _MiniPill({required this.icon, required this.label, this.color});
+  final IconData icon;
+  final String label;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final c = color ?? scheme.onSurfaceVariant;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(8, 3, 10, 3),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHigh.withValues(alpha: 0.55),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: c),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: c,
+                  fontWeight: FontWeight.w600,
+                ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HeroChip extends StatelessWidget {
+  const _HeroChip({
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
+  final IconData icon;
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(10, 6, 14, 6),
+      decoration: BoxDecoration(
+        color: scheme.surface.withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: color),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Gợi ý chọn IP (LAN vs Tailscale) — không thay thế cấu hình firewall/router.
+class _NetworkHintCard extends StatelessWidget {
+  const _NetworkHintCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      child: Card(
+        margin: EdgeInsets.zero,
+        child: ExpansionTile(
+          leading: Icon(Icons.help_outline_rounded, color: scheme.primary),
+          title: const Text('Mạng & robot: LAN, Tailscale, máy khác'),
+          subtitle: const Text('Khi nào dùng IP LAN, khi nào dùng 100.x…'),
+          childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          children: const [
+            _HintBullet(
+              title: 'Cùng Wi‑Fi / LAN (thường không cần Internet)',
+              body:
+                  'PC và Jetson cùng switch/Wi‑Fi: dùng IP mạng nội bộ của robot (vd. 192.168.x.x). '
+                  'Đảm bảo rosbridge lắng nghe 0.0.0.0:9090 trên Jetson. '
+                  'Cách này không phụ thuộc Tailscale.',
+            ),
+            SizedBox(height: 12),
+            _HintBullet(
+              title: 'Tailscale (IP 100.x.x.x — ví dụ DDE-AMR đặt sẵn)',
+              body:
+                  'Hai máy cùng tailnet: kết nối qua IP Tailscale được gán cho Jetson. '
+                  'Phù hợp khi laptop và robot khác subnet hoặc ở xa. '
+                  'Nếu bạn muốn làm việc “offline” nhưng vẫn cùng phòng: ưu tiên IP LAN thay vì 100.x. '
+                  'Khi cả hai chỉ có Tailscale và mất Internet công cộng, kết nối phụ thuộc chế độ direct/relay của Tailscale.',
+            ),
+            SizedBox(height: 12),
+            _HintBullet(
+              title: 'Không cùng Tailscale',
+              body:
+                  'Gắn máy vào cùng tailnet, hoặc dùng VPN khác (WireGuard, ZeroTier…), '
+                  'hoặc mở cổng rosbridge qua router (NAT + bảo mật). '
+                  'Trong app: thêm profile mới với IP/port tương ứng.',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _HintBullet extends StatelessWidget {
+  const _HintBullet({required this.title, required this.body});
+  final String title;
+  final String body;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          body,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(height: 1.45),
+        ),
+      ],
     );
   }
 }

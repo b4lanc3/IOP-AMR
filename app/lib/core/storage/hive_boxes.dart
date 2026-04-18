@@ -13,6 +13,9 @@ class HiveBoxes {
   static const gamepadProfilesBoxName = 'gamepad_profiles';
   static const appSettingsKey = 'app_settings';
 
+  /// Profile robot mặc định (chỉ thêm khi chưa có robot nào — lần đầu cài app).
+  static const presetDdeAmrId = 'preset-dde-amr';
+
   static late Box<RobotProfile> robots;
   static late Box<Mission> missions;
   static late Box<dynamic> settings;
@@ -55,6 +58,23 @@ class HiveBoxes {
         current.copyWith(activeGamepadProfileId: defaultId),
       );
     }
+    _ensurePresetRobotProfile();
+  }
+
+  /// Robot mặc định DDE-AMR (Tailscale). Chỉ seed khi danh sách robot đang trống.
+  static void _ensurePresetRobotProfile() {
+    if (robots.isNotEmpty) return;
+    robots.put(
+      presetDdeAmrId,
+      RobotProfile(
+        id: presetDdeAmrId,
+        name: 'DDE-AMR',
+        host: '100.117.81.58',
+        port: 9090,
+        namespace: '',
+        videoPort: 8080,
+      ),
+    );
   }
 
   static AppSettings readAppSettings() =>

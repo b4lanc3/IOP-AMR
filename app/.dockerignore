@@ -1,0 +1,14 @@
+# Tránh bloat Docker build context.
+build/
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+dist/
+windows/flutter/ephemeral/
+linux/flutter/ephemeral/
+macos/Flutter/ephemeral/
+**/.DS_Store
+**/.idea/
+**/.vs/
+**/.vscode/
+**/*.log

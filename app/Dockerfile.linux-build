@@ -1,0 +1,48 @@
+# syntax=docker/dockerfile:1
+# Cross-build IOP-AMR Control (.deb + tar.gz) cho Ubuntu 22.04 từ máy Windows/macOS.
+# Cách dùng (PowerShell):
+#
+#   cd app
+#   docker build -f Dockerfile.linux-build -t iopamr-linux-build .
+#   docker run --rm -v ${PWD}/dist:/out iopamr-linux-build
+#
+# Sau khi chạy xong, file sẽ nằm trong  .\dist\  trên máy host:
+#   dist/IOP-AMR-Control-linux-x64.tar.gz
+#   dist/iop-amr-control_1.0.0_amd64.deb
+FROM ubuntu:22.04
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    FLUTTER_HOME=/opt/flutter \
+    PATH=/opt/flutter/bin:/opt/flutter/bin/cache/dart-sdk/bin:$PATH
+
+# 1) system deps
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      git curl ca-certificates xz-utils unzip \
+      clang cmake ninja-build pkg-config \
+      libgtk-3-dev libblkid-dev liblzma-dev libstdc++-12-dev \
+      mesa-common-dev libglu1-mesa \
+      libayatana-appindicator3-dev libsecret-1-dev libunwind-dev \
+      fakeroot dpkg-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# 2) Flutter stable
+RUN git clone --depth 1 -b stable https://github.com/flutter/flutter.git ${FLUTTER_HOME} \
+    && git config --global --add safe.directory ${FLUTTER_HOME} \
+    && flutter --version \
+    && flutter config --enable-linux-desktop \
+    && flutter precache --linux
+
+# 3) App source
+WORKDIR /src
+COPY . /src
+
+# 4) Build
+RUN flutter pub get
+
+CMD set -e; \
+    chmod +x scripts/build_linux_release.sh; \
+    ./scripts/build_linux_release.sh; \
+    mkdir -p /out; \
+    cp -v dist/IOP-AMR-Control-linux-x64.tar.gz /out/; \
+    cp -v dist/iop-amr-control_*_amd64.deb /out/; \
+    ls -la /out
