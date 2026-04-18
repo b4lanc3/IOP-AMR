@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../core/providers/settings_provider.dart';
@@ -167,6 +168,35 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ),
+          ],
+        ),
+        _Section(
+          title: 'Ứng dụng',
+          children: [
+            FutureBuilder<PackageInfo>(
+              future: PackageInfo.fromPlatform(),
+              builder: (context, snap) {
+                final info = snap.data;
+                return ListTile(
+                  leading: const Icon(Icons.info_outline_rounded),
+                  title: const Text('Phiên bản'),
+                  subtitle: Text(
+                    info == null
+                        ? 'Đang tải…'
+                        : '${info.version} (${info.buildNumber}) · ${info.appName}',
+                  ),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.download_outlined),
+              title: const Text('Cài đặt Windows'),
+              subtitle: const Text(
+                'Bản phát hành: chạy dart run msix:create trong thư mục app '
+                'để tạo file .msix, hoặc dùng ZIP thư mục Release (xem scripts/).',
+              ),
+              isThreeLine: true,
+            ),
           ],
         ),
       ],

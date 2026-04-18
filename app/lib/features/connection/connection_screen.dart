@@ -126,19 +126,93 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
           if (robots.isEmpty) return const _EmptyState();
           final sorted = robots.toList()
             ..sort((a, b) => a.name.compareTo(b.name));
-          return ListView.separated(
-            padding: const EdgeInsets.all(16),
-            itemCount: sorted.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 8),
-            itemBuilder: (context, i) {
-              final r = sorted[i];
-              return _RobotCard(
-                profile: r,
-                onConnect: () => _connect(r),
-                onEdit: () => _addOrEdit(r),
-                onDelete: () => _delete(r),
-              );
-            },
+          final scheme = Theme.of(context).colorScheme;
+          return CustomScrollView(
+            slivers: [
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          scheme.primary.withValues(alpha: 0.12),
+                          scheme.tertiary.withValues(alpha: 0.08),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: scheme.outlineVariant.withValues(alpha: 0.4),
+                      ),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(Icons.hub_rounded,
+                                  color: scheme.primary, size: 28),
+                              const SizedBox(width: 12),
+                              Text(
+                                'Fleet & kết nối',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleLarge
+                                    ?.copyWith(fontWeight: FontWeight.bold),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Chọn robot để làm việc, hoặc thêm IP thủ công / quét mDNS. '
+                            'Sau khi nối rosbridge, app sẽ nhớ profile trên máy này.',
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  color: scheme.onSurfaceVariant,
+                                  height: 1.35,
+                                ),
+                          ),
+                          const SizedBox(height: 12),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              Chip(
+                                avatar: Icon(Icons.numbers, size: 18, color: scheme.secondary),
+                                label: Text('${sorted.length} robot đã lưu'),
+                              ),
+                              Chip(
+                                avatar: Icon(Icons.cable_rounded, size: 18, color: scheme.tertiary),
+                                label: const Text('rosbridge 9090 · video 8080 (mặc định)'),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 88),
+                sliver: SliverList.separated(
+                  itemCount: sorted.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 10),
+                  itemBuilder: (context, i) {
+                    final r = sorted[i];
+                    return _RobotCard(
+                      profile: r,
+                      onConnect: () => _connect(r),
+                      onEdit: () => _addOrEdit(r),
+                      onDelete: () => _delete(r),
+                    );
+                  },
+                ),
+              ),
+            ],
           );
         },
         error: (e, __) => Center(child: Text('Lỗi: $e')),
@@ -201,10 +275,14 @@ class _RobotCardState extends State<_RobotCard> {
     final p = widget.profile;
     return Card(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         child: Row(
           children: [
-            const CircleAvatar(child: Icon(Icons.smart_toy_outlined)),
+            CircleAvatar(
+              backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+              child: Icon(Icons.smart_toy_outlined,
+                  color: Theme.of(context).colorScheme.onPrimaryContainer),
+            ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -263,18 +341,72 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.wifi_off, size: 64),
-          const SizedBox(height: 16),
-          Text('Chưa có robot nào',
-              style: Theme.of(context).textTheme.titleLarge),
-          const SizedBox(height: 8),
-          const Text('Nhấn "Thêm IP" hoặc quét mDNS ở thanh trên.'),
-        ],
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 420),
+          child: Card(
+            child: Padding(
+              padding: const EdgeInsets.all(28),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircleAvatar(
+                    radius: 40,
+                    backgroundColor: scheme.primaryContainer,
+                    child: Icon(Icons.router_rounded,
+                        size: 44, color: scheme.onPrimaryContainer),
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    'Chưa có robot',
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Thêm địa chỉ IP Jetson (rosbridge thường là cổng 9090) '
+                    'hoặc quét mDNS nếu robot quảng bá trên LAN.',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: scheme.onSurfaceVariant,
+                          height: 1.4,
+                        ),
+                  ),
+                  const SizedBox(height: 20),
+                  const _TipRow(icon: Icons.add_circle_outline, text: 'Nút Thêm IP — nhập host, port, namespace'),
+                  const SizedBox(height: 8),
+                  const _TipRow(icon: Icons.radar, text: 'Quét mDNS — tìm robot trên mạng cục bộ'),
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
+    );
+  }
+}
+
+class _TipRow extends StatelessWidget {
+  const _TipRow({required this.icon, required this.text});
+  final IconData icon;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 20, color: Theme.of(context).colorScheme.primary),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(text, style: Theme.of(context).textTheme.bodySmall),
+        ),
+      ],
     );
   }
 }

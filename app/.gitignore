@@ -33,6 +33,10 @@ migrate_working_dir/
 /build/
 /coverage/
 
+# Gói cài (MSIX / build script) — tạo lại bằng scripts/build_windows_release.ps1
+/dist/
+*.msix
+
 # Symbolication related
 app.*.symbols
 
