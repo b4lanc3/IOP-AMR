@@ -48,6 +48,14 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^4.0.0
 
+# path_provider_foundation 2.5+ depends on objective_c (native asset hooks).
+# On Windows, those hooks invoke cmd without quoting paths that contain spaces
+# (e.g. C:\Users\Tran Binh Minh\...), breaking `flutter build/run` with:
+#   'C:\Users\Tran' is not recognized as an internal or external command
+# 2.4.x uses Pigeon only — no objective_c — so builds work in profile dirs with spaces.
+dependency_overrides:
+  path_provider_foundation: 2.4.1
+
 flutter:
   uses-material-design: true
   assets:
