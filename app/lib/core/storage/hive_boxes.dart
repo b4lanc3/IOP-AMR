@@ -47,7 +47,7 @@ class HiveBoxes {
       settings.put(appSettingsKey, AppSettings());
     }
     if (gamepadProfiles.isEmpty) {
-      final defaultId = 'flydigi-direwolf-default';
+      const defaultId = 'flydigi-direwolf-default';
       gamepadProfiles.put(
         defaultId,
         GamepadProfile(id: defaultId, name: 'Flydigi Direwolf (default)'),

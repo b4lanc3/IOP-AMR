@@ -8,6 +8,13 @@ import 'package:flutter/services.dart';
 class AppTheme {
   const AppTheme._();
 
+  /// Bo góc dùng chung — mềm, đồng bộ toàn app (card, nút, sheet…).
+  static const double radiusXs = 10;
+  static const double radiusSm = 12;
+  static const double radiusMd = 16;
+  static const double radiusLg = 24;
+  static const double radiusXl = 28;
+
   // Brand palette
   static const brandPrimary = Color(0xFF3D5AFE); // indigo A400
   static const brandAccent = Color(0xFF22D3EE); // cyan 400
@@ -110,10 +117,6 @@ class AppTheme {
       ),
     );
 
-    const radiusSm = 10.0;
-    const radiusMd = 14.0;
-    const radiusLg = 20.0;
-
     return ThemeData(
       useMaterial3: true,
       brightness: brightness,
@@ -123,6 +126,9 @@ class AppTheme {
       visualDensity: VisualDensity.adaptivePlatformDensity,
       materialTapTargetSize: MaterialTapTargetSize.padded,
       splashFactory: InkSparkle.splashFactory,
+      splashColor: scheme.primary.withValues(alpha: 0.12),
+      hoverColor: scheme.primary.withValues(alpha: 0.06),
+      highlightColor: scheme.primary.withValues(alpha: 0.08),
       appBarTheme: AppBarTheme(
         elevation: 0,
         scrolledUnderElevation: 0.5,
@@ -141,7 +147,7 @@ class AppTheme {
         surfaceTintColor: Colors.transparent,
         shadowColor: Colors.black.withValues(alpha: isDark ? 0.4 : 0.08),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(radiusLg),
+          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
           side: BorderSide(
             color: scheme.outlineVariant.withValues(alpha: isDark ? 0.7 : 0.9),
           ),
@@ -153,7 +159,7 @@ class AppTheme {
         style: FilledButton.styleFrom(
           padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(radiusMd),
+            borderRadius: BorderRadius.circular(AppTheme.radiusMd),
           ),
           textStyle: text.labelLarge,
         ),
@@ -162,7 +168,7 @@ class AppTheme {
         style: OutlinedButton.styleFrom(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(radiusMd),
+            borderRadius: BorderRadius.circular(AppTheme.radiusMd),
           ),
           side: BorderSide(color: scheme.outlineVariant),
           textStyle: text.labelLarge,
@@ -172,7 +178,7 @@ class AppTheme {
         style: TextButton.styleFrom(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(radiusSm),
+            borderRadius: BorderRadius.circular(AppTheme.radiusSm),
           ),
           textStyle: text.labelLarge,
         ),
@@ -180,14 +186,14 @@ class AppTheme {
       iconButtonTheme: IconButtonThemeData(
         style: IconButton.styleFrom(
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(radiusMd),
+            borderRadius: BorderRadius.circular(AppTheme.radiusMd),
           ),
         ),
       ),
       segmentedButtonTheme: SegmentedButtonThemeData(
         style: SegmentedButton.styleFrom(
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(radiusMd),
+            borderRadius: BorderRadius.circular(AppTheme.radiusMd),
           ),
           textStyle: text.labelMedium,
         ),
@@ -197,15 +203,15 @@ class AppTheme {
         fillColor: scheme.surfaceContainerHigh.withValues(alpha: isDark ? 0.5 : 0.85),
         hintStyle: TextStyle(color: scheme.onSurfaceVariant),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(radiusMd),
+          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
           borderSide: BorderSide(color: scheme.outlineVariant),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(radiusMd),
+          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
           borderSide: BorderSide(color: scheme.outlineVariant),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(radiusMd),
+          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
           borderSide: BorderSide(color: scheme.primary, width: 1.5),
         ),
         contentPadding:
@@ -229,7 +235,7 @@ class AppTheme {
         backgroundColor: scheme.surfaceContainerLow,
         indicatorColor: scheme.primary.withValues(alpha: 0.16),
         indicatorShape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
         ),
         selectedIconTheme: IconThemeData(color: scheme.primary),
         selectedLabelTextStyle: text.labelMedium?.copyWith(
@@ -247,7 +253,8 @@ class AppTheme {
         backgroundColor: scheme.surfaceContainer,
         surfaceTintColor: Colors.transparent,
         indicatorColor: scheme.primary.withValues(alpha: 0.18),
-        height: 68,
+        height: 72,
+        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
         labelTextStyle: WidgetStateProperty.resolveWith((s) {
           final selected = s.contains(WidgetState.selected);
           return text.labelMedium?.copyWith(
@@ -266,7 +273,7 @@ class AppTheme {
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(radiusMd),
+          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
         ),
         elevation: 4,
         backgroundColor: scheme.inverseSurface,
@@ -274,26 +281,75 @@ class AppTheme {
       ),
       dialogTheme: DialogThemeData(
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+        ),
+      ),
+      drawerTheme: const DrawerThemeData(
+        elevation: 2,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.horizontal(
+            right: Radius.circular(AppTheme.radiusLg),
+          ),
+        ),
+      ),
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: scheme.surfaceContainerLow,
+        surfaceTintColor: Colors.transparent,
+        showDragHandle: true,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(AppTheme.radiusXl),
+          ),
+        ),
+      ),
+      popupMenuTheme: PopupMenuThemeData(
+        color: scheme.surfaceContainer,
+        surfaceTintColor: Colors.transparent,
+        elevation: 4,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        ),
+      ),
+      menuTheme: MenuThemeData(
+        style: MenuStyle(
+          backgroundColor: WidgetStatePropertyAll<Color?>(
+            scheme.surfaceContainer,
+          ),
+          shape: WidgetStatePropertyAll<OutlinedBorder>(
+            RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+            ),
+          ),
+        ),
+      ),
+      expansionTileTheme: ExpansionTileThemeData(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        ),
+        collapsedShape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
         ),
       ),
       listTileTheme: ListTileThemeData(
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(radiusMd),
+          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       ),
       tooltipTheme: TooltipThemeData(
         decoration: BoxDecoration(
           color: scheme.inverseSurface,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(AppTheme.radiusXs),
         ),
         textStyle: TextStyle(color: scheme.onInverseSurface, fontSize: 12),
         waitDuration: const Duration(milliseconds: 400),
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
         elevation: 6,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+        ),
         backgroundColor: scheme.primary,
         foregroundColor: scheme.onPrimary,
       ),
@@ -321,10 +377,41 @@ class AppTheme {
         builders: {
           TargetPlatform.android: ZoomPageTransitionsBuilder(),
           TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
-          TargetPlatform.windows: FadeUpwardsPageTransitionsBuilder(),
-          TargetPlatform.linux: FadeUpwardsPageTransitionsBuilder(),
+          TargetPlatform.fuchsia: ZoomPageTransitionsBuilder(),
+          TargetPlatform.windows: SmoothFadePageTransitionsBuilder(),
+          TargetPlatform.linux: SmoothFadePageTransitionsBuilder(),
           TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
         },
+      ),
+    );
+  }
+}
+
+/// Fade mượt cho desktop — bớt cảm giác “trượt cứng” của [FadeUpwardsPageTransitionsBuilder].
+class SmoothFadePageTransitionsBuilder extends PageTransitionsBuilder {
+  const SmoothFadePageTransitionsBuilder();
+
+  @override
+  Widget buildTransitions<T extends Object?>(
+    PageRoute<T> route,
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) {
+    final curved = CurvedAnimation(
+      parent: animation,
+      curve: Curves.easeOutCubic,
+      reverseCurve: Curves.easeInCubic,
+    );
+    return FadeTransition(
+      opacity: curved,
+      child: SlideTransition(
+        position: Tween<Offset>(
+          begin: const Offset(0, 0.02),
+          end: Offset.zero,
+        ).animate(curved),
+        child: child,
       ),
     );
   }

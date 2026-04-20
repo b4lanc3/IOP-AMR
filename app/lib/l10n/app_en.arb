@@ -1,0 +1,345 @@
+{
+  "@@locale": "en",
+  "appTitle": "IOP-AMR Control",
+  "navDashboard": "Dashboard",
+  "navCamera": "Camera",
+  "navLidar": "LiDAR",
+  "navMap": "Map",
+  "navMapping": "Mapping",
+  "navWaypoints": "Waypoints",
+  "navMonitoring": "Monitor",
+  "navParams": "Params",
+  "navLogs": "Logs",
+  "navFleet": "Fleet",
+  "navSettings": "Settings",
+  "shellBrandSubtitle": "Control suite",
+  "shellDrawerSubtitle": "Control & monitoring",
+  "shellSwapRobotTooltip": "Switch robot",
+  "shellMenuTooltip": "Menu",
+  "statusNotConnected": "Not connected",
+  "statusOnline": "Online",
+  "statusConnecting": "Connecting…",
+  "statusError": "Error",
+  "statusOffline": "Offline",
+  "estopFabOn": "E-STOP ON",
+  "estopFab": "E-STOP",
+  "estopServiceError": "E-stop service error: {error}",
+  "@estopServiceError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "settingsSectionAppearance": "Appearance",
+  "settingsSectionLanguage": "Language",
+  "settingsLanguageLabel": "Interface language",
+  "settingsLanguageVietnamese": "Vietnamese",
+  "settingsLanguageEnglish": "English",
+  "settingsTheme": "Theme",
+  "settingsThemeSystem": "System",
+  "settingsThemeLight": "Light",
+  "settingsThemeDark": "Dark",
+  "settingsUnits": "Display units",
+  "settingsUnitsMetric": "Metric (m, m/s)",
+  "settingsUnitsImperial": "Imperial (ft, ft/s)",
+  "settingsLidarGrid": "Show grid on LiDAR",
+  "settingsSectionConnection": "Connection",
+  "settingsAutoReconnect": "Auto-reconnect",
+  "settingsAutoReconnectSubtitle": "Reconnect if rosbridge drops, exponential backoff",
+  "settingsSectionControl": "Control",
+  "settingsMaxLinear": "Max linear speed",
+  "settingsMaxAngular": "Max angular speed",
+  "settingsCmdVelHz": "/cmd_vel publish rate",
+  "settingsSectionGamepad": "Gamepad",
+  "settingsNewProfileTooltip": "New profile",
+  "settingsEditTooltip": "Edit",
+  "settingsDeleteTooltip": "Delete",
+  "settingsUsingProfile": "Active: {name}",
+  "@settingsUsingProfile": {
+    "placeholders": {"name": {"type": "String"}}
+  },
+  "settingsSectionApp": "Application",
+  "settingsVersion": "Version",
+  "settingsVersionLoading": "Loading…",
+  "settingsWindowsInstall": "Windows install",
+  "settingsWindowsInstallSubtitle": "Release: run dart run msix:create in the app folder to build .msix, or use the Release ZIP folder (see scripts/).",
+  "settingsDeleteProfileTitle": "Delete profile?",
+  "settingsDeleteProfileBody": "Delete \"{name}\"? This cannot be undone.",
+  "@settingsDeleteProfileBody": {
+    "placeholders": {"name": {"type": "String"}}
+  },
+  "commonCancel": "Cancel",
+  "commonDelete": "Delete",
+  "commonSave": "Save",
+  "commonOk": "OK",
+  "gamepadEditTitle": "Edit gamepad profile",
+  "gamepadProfileName": "Profile name",
+  "gamepadLinearAxis": "Linear axis key (e.g. l.y)",
+  "gamepadAngularAxis": "Angular axis key (e.g. r.x)",
+  "gamepadInvertLinear": "Invert linear",
+  "gamepadInvertAngular": "Invert angular",
+  "gamepadButtonMap": "Button mapping",
+  "gamepadLinearScale": "Linear scale",
+  "gamepadAngularScale": "Angular scale",
+  "gamepadDeadzone": "Deadzone",
+  "connectionTitle": "Connect robot",
+  "connectionScanMdns": "Scan mDNS",
+  "connectionSettings": "Settings",
+  "connectionScanDone": "Scan complete: {count} robots",
+  "@connectionScanDone": {
+    "placeholders": {"count": {"type": "int"}}
+  },
+  "connectionDeleteRobotTitle": "Delete \"{name}\"?",
+  "@connectionDeleteRobotTitle": {
+    "placeholders": {"name": {"type": "String"}}
+  },
+  "connectionDeleteRobotBody": "This action cannot be undone.",
+  "connectionFailedRetry": "Could not connect to {name} — retrying…",
+  "@connectionFailedRetry": {
+    "placeholders": {"name": {"type": "String"}}
+  },
+  "connectionHeroTitle": "Fleet & connection",
+  "connectionHeroSubtitle": "Pick a robot to work with, or add an IP manually / scan mDNS. After rosbridge connects, this device remembers the profile.",
+  "connectionRobotsSaved": "{count} robots saved",
+  "@connectionRobotsSaved": {
+    "placeholders": {"count": {"type": "int"}}
+  },
+  "connectionRosbridgeChip": "rosbridge 9090 · video 8080",
+  "connectionError": "Error: {message}",
+  "@connectionError": {
+    "placeholders": {"message": {"type": "String"}}
+  },
+  "connectionAddIp": "Add IP",
+  "connectionPingTooltip": "Test ping",
+  "connectionEditTooltip": "Edit",
+  "connectionDeleteTooltip": "Delete",
+  "connectionConnect": "Connect",
+  "connectionPingUnreachable": "unreachable",
+  "connectionNamespacePill": "ns {value}",
+  "@connectionNamespacePill": {
+    "placeholders": {"value": {"type": "String"}}
+  },
+  "connectionVideoPill": "video {port}",
+  "@connectionVideoPill": {
+    "placeholders": {"port": {"type": "int"}}
+  },
+  "connectionPingPill": "ping {result}",
+  "@connectionPingPill": {
+    "placeholders": {"result": {"type": "String"}}
+  },
+  "connectionNetworkHelpTitle": "Network & robots: LAN, Tailscale, remote",
+  "connectionNetworkHelpSubtitle": "When to use LAN IP vs 100.x…",
+  "connectionHintLanTitle": "Same Wi‑Fi / LAN (often no Internet needed)",
+  "connectionHintLanBody": "PC and Jetson on the same switch/Wi‑Fi: use the robot’s LAN IP (e.g. 192.168.x.x). Ensure rosbridge listens on 0.0.0.0:9090 on Jetson. No Tailscale required.",
+  "connectionHintTailscaleTitle": "Tailscale (100.x.x.x — e.g. preset DDE-AMR)",
+  "connectionHintTailscaleBody": "Both machines on the same tailnet: connect via the Tailscale IP assigned to Jetson. Use when laptop and robot differ subnet or are remote. For same room “offline” work, prefer LAN over 100.x.",
+  "connectionHintNotTailscaleTitle": "Not on the same Tailscale",
+  "connectionHintNotTailscaleBody": "Join the same tailnet, or use another VPN (WireGuard, ZeroTier…), or expose rosbridge through your router (NAT + security). In the app: add a profile with the right IP/port.",
+  "connectionEmptyTitle": "No robots yet",
+  "connectionEmptyBody": "Add the Jetson IP (rosbridge is usually port 9090) or scan mDNS if the robot advertises on the LAN.",
+  "connectionTipAddIp": "Add IP — enter host, port, namespace",
+  "connectionTipMdns": "Scan mDNS — find robots on the local network",
+  "connectionDialogEditTitle": "Edit robot",
+  "connectionDialogAddTitle": "Add robot",
+  "connectionDisplayName": "Display name",
+  "connectionHost": "IP / hostname",
+  "connectionRosbridgePort": "rosbridge port",
+  "connectionVideoPort": "video port",
+  "connectionNamespaceOptional": "Namespace (optional)",
+  "connectionNamespaceHint": "e.g. /robot_1",
+  "connectionAuthTokenOptional": "Auth token (optional)",
+  "connectionUseWss": "Use wss:// / https://",
+  "connectionNameRequired": "Enter a name",
+  "connectionHostRequired": "Enter host",
+  "dashboardNoRobot": "No robot selected",
+  "dashboardLiveStatus": "Live status",
+  "dashboardLiveStatusSubtitle": "Data from rosbridge topics (battery, velocity, pose, CPU/GPU).",
+  "dashboardOnlineHost": "Online · {host}",
+  "@dashboardOnlineHost": {
+    "placeholders": {"host": {"type": "String"}}
+  },
+  "dashboardOfflineHint": "Offline — check rosbridge or pick another robot",
+  "dashboardBatteryPercent": "{pct}% battery",
+  "dashboardBatteryCharging": "charging",
+  "@dashboardBatteryPercent": {
+    "placeholders": {"pct": {"type": "String"}}
+  },
+  "dashboardBattery": "Battery",
+  "dashboardVelocity": "Velocity",
+  "dashboardVelocityOmega": "ω: {value} rad/s",
+  "@dashboardVelocityOmega": {
+    "placeholders": {"value": {"type": "String"}}
+  },
+  "dashboardPoseOdom": "odom",
+  "dashboardPoseAmcl": "amcl (map)",
+  "dashboardPoseTitle": "Pose",
+  "dashboardSystemTitle": "System",
+  "cameraNoRobot": "No robot selected",
+  "cameraRgbTopic": "RGB topic",
+  "cameraDepthTopic": "Depth topic",
+  "cameraReloadTooltip": "Reload both streams",
+  "cameraTabRgb": "RGB",
+  "cameraTabDepth": "Depth",
+  "lidarRange": "Range",
+  "lidarResetView": "Reset view",
+  "lidarScaleLabel": "{value} px/m",
+  "@lidarScaleLabel": {
+    "placeholders": {"value": {"type": "String"}}
+  },
+  "mappingTitle": "SLAM Mapping",
+  "mappingRunning": "Mapping",
+  "mappingMapName": "Map name",
+  "mappingStart": "Start",
+  "mappingStop": "Stop",
+  "mappingSaveMap": "Save map",
+  "mappingReset": "Reset",
+  "mappingOpenMap": "View live on Map",
+  "mappingSlamResult": "SLAM {action}: {message}",
+  "@mappingSlamResult": {
+    "placeholders": {
+      "action": {"type": "String"},
+      "message": {"type": "String"}
+    }
+  },
+  "mappingError": "Error: {message}",
+  "@mappingError": {
+    "placeholders": {"message": {"type": "String"}}
+  },
+  "mappingSaveRequested": "Save requested for map \"{name}\"",
+  "@mappingSaveRequested": {
+    "placeholders": {"name": {"type": "String"}}
+  },
+  "mappingSaveError": "Save error: {message}",
+  "@mappingSaveError": {
+    "placeholders": {"message": {"type": "String"}}
+  },
+  "mappingHowToTitle": "Mapping workflow",
+  "mappingHowToBody": "1. Tap Start to run slam_toolbox.\n2. Open Map or Teleop and drive slowly around the area.\n3. When the map looks good, return here and tap Save map.\n4. After saving, you can Stop SLAM and switch to navigation mode.",
+  "logsTitle": "Rosbag recorder",
+  "logsBagName": "Bag name",
+  "logsTopicsComma": "Topics (comma-separated)",
+  "logsStart": "Start",
+  "logsStop": "Stop",
+  "logsRefreshList": "Refresh list",
+  "logsAvailableBags": "Available bags",
+  "logsBagCount": "{count} bags",
+  "@logsBagCount": {
+    "placeholders": {"count": {"type": "int"}}
+  },
+  "logsEmpty": "No bags yet. Tap \"Refresh list\" or record a new bag.",
+  "logsNotConnected": "Not connected to robot",
+  "logsBagAction": "Bag {action}: {message}",
+  "@logsBagAction": {
+    "placeholders": {
+      "action": {"type": "String"},
+      "message": {"type": "String"}
+    }
+  },
+  "logsErrorAction": "Error {action}: {message}",
+  "@logsErrorAction": {
+    "placeholders": {
+      "action": {"type": "String"},
+      "message": {"type": "String"}
+    }
+  },
+  "fleetError": "Error loading robots: {message}",
+  "@fleetError": {
+    "placeholders": {"message": {"type": "String"}}
+  },
+  "fleetEmpty": "No robots in the fleet yet.",
+  "fleetAddRobot": "Add robot",
+  "fleetStandby": "Standby",
+  "fleetCurrentActive": "In use",
+  "fleetSwitchToRobot": "Switch to robot",
+  "fleetOpenConnectionTooltip": "Open connection screen",
+  "cameraStreamError": "Could not load stream:\n{error}",
+  "@cameraStreamError": {
+    "placeholders": {"error": {"type": "String"}}
+  },
+  "cameraRetry": "Retry",
+  "waypointsMissionNameTitle": "Mission name",
+  "waypointsMissionNew": "New mission",
+  "waypointsWaypointLabelTitle": "Waypoint label",
+  "waypointsWaypointTitle": "Waypoint #{n}",
+  "@waypointsWaypointTitle": {
+    "placeholders": {"n": {"type": "int"}}
+  },
+  "waypointsMissions": "Missions",
+  "waypointsNewMissionTooltip": "New mission",
+  "waypointsWaypointCount": "{count} waypoints",
+  "@waypointsWaypointCount": {
+    "placeholders": {"count": {"type": "int"}}
+  },
+  "waypointsSelectMission": "Select or create a mission in the left panel.",
+  "waypointsCancelNav": "Cancel",
+  "waypointsAddFromPose": "Add from current pose",
+  "waypointsRunMission": "Run mission",
+  "waypointsDeleteAll": "Delete all",
+  "waypointsWaypoint": "Waypoint",
+  "waypointsEmptyHint": "No waypoints yet. Drive the robot into position, then tap \"Add from current pose\".",
+  "waypointsSendingMission": "Sending mission ({count} wp)…",
+  "@waypointsSendingMission": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "waypointsRunning": "Running…",
+  "waypointsRunningRemaining": "Running… {remaining} wp left",
+  "@waypointsRunningRemaining": {
+    "placeholders": {
+      "remaining": {"type": "int"}
+    }
+  },
+  "mapWaitingMap": "Waiting for /map …",
+  "mapTapGoal": "Tap → Goal",
+  "mapTapInitPose": "Tap → Init pose",
+  "mapRecenterTooltip": "Recenter",
+  "mapCancelGoal": "Cancel goal",
+  "mapInitialPoseSent": "Sent initial pose: ({x}, {y})",
+  "@mapInitialPoseSent": {
+    "placeholders": {
+      "x": {"type": "String"},
+      "y": {"type": "String"}
+    }
+  },
+  "mapSendingGoal": "Sending goal…",
+  "mapExecuting": "Executing…",
+  "mapExecutingLeft": "Executing… {meters} m left",
+  "@mapExecutingLeft": {
+    "placeholders": {"meters": {"type": "String"}}
+  },
+  "mapGoalResult": "Result: {status}",
+  "@mapGoalResult": {
+    "placeholders": {"status": {"type": "String"}}
+  },
+  "mapCancelling": "Cancelling…",
+  "paramsNav2LiveTuning": "Nav2 live tuning",
+  "paramsSubtitle": "Each slider/switch sends rcl_interfaces/srv/SetParameters to the matching node.",
+  "paramsReadCurrent": "Read current",
+  "paramsNodeLabel": "Node: {name}",
+  "@paramsNodeLabel": {
+    "placeholders": {"name": {"type": "String"}}
+  },
+  "paramsReadBackOk": "Reloaded current parameters from nodes",
+  "paramsReadBackError": "Read params error: {message}",
+  "@paramsReadBackError": {
+    "placeholders": {"message": {"type": "String"}}
+  },
+  "paramsSetError": "Error {name}: {message}",
+  "@paramsSetError": {
+    "placeholders": {
+      "name": {"type": "String"},
+      "message": {"type": "String"}
+    }
+  },
+  "paramsSetStatus": "{name} = {value} — {result}",
+  "@paramsSetStatus": {
+    "placeholders": {
+      "name": {"type": "String"},
+      "value": {"type": "String"},
+      "result": {"type": "String"}
+    }
+  },
+  "paramsDescMaxVelX": "Max DWB tracking linear speed",
+  "paramsDescInflationGlobal": "Global costmap obstacle inflation radius",
+  "uiKitSectionOverview": "Overview"
+}

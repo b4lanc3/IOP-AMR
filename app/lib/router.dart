@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'core/navigation/app_page_transitions.dart';
 import 'features/camera/camera_screen.dart';
 import 'features/connection/connection_screen.dart';
 import 'features/dashboard/dashboard_screen.dart';
@@ -13,32 +14,83 @@ import 'features/monitoring/monitoring_screen.dart';
 import 'features/params/params_screen.dart';
 import 'features/settings/settings_screen.dart';
 import 'features/shell/main_shell.dart';
-import 'features/teleop/teleop_screen.dart';
 import 'features/waypoints/waypoints_screen.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: '/connection',
+    redirect: (context, state) {
+      if (state.uri.path == '/teleop') return '/dashboard';
+      return null;
+    },
     routes: [
       GoRoute(
         path: '/connection',
-        builder: (context, state) => const ConnectionScreen(),
+        pageBuilder: (context, state) => appFullScreenPage(
+          key: state.pageKey,
+          child: const ConnectionScreen(),
+        ),
       ),
       ShellRoute(
         builder: (context, state, child) => MainShell(child: child),
         routes: [
-          GoRoute(path: '/dashboard', builder: (c, s) => const DashboardScreen()),
-          GoRoute(path: '/teleop', builder: (c, s) => const TeleopScreen()),
-          GoRoute(path: '/camera', builder: (c, s) => const CameraScreen()),
-          GoRoute(path: '/lidar', builder: (c, s) => const LidarScreen()),
-          GoRoute(path: '/map', builder: (c, s) => const MapScreen()),
-          GoRoute(path: '/mapping', builder: (c, s) => const MappingScreen()),
-          GoRoute(path: '/waypoints', builder: (c, s) => const WaypointsScreen()),
-          GoRoute(path: '/monitoring', builder: (c, s) => const MonitoringScreen()),
-          GoRoute(path: '/params', builder: (c, s) => const ParamsScreen()),
-          GoRoute(path: '/logs', builder: (c, s) => const LogsScreen()),
-          GoRoute(path: '/fleet', builder: (c, s) => const FleetScreen()),
-          GoRoute(path: '/settings', builder: (c, s) => const SettingsScreen()),
+          GoRoute(
+            path: '/dashboard',
+            pageBuilder: (c, s) => appShellPage(
+              key: s.pageKey,
+              child: const DashboardScreen(),
+            ),
+          ),
+          GoRoute(
+            path: '/camera',
+            pageBuilder: (c, s) =>
+                appShellPage(key: s.pageKey, child: const CameraScreen()),
+          ),
+          GoRoute(
+            path: '/lidar',
+            pageBuilder: (c, s) =>
+                appShellPage(key: s.pageKey, child: const LidarScreen()),
+          ),
+          GoRoute(
+            path: '/map',
+            pageBuilder: (c, s) =>
+                appShellPage(key: s.pageKey, child: const MapScreen()),
+          ),
+          GoRoute(
+            path: '/mapping',
+            pageBuilder: (c, s) =>
+                appShellPage(key: s.pageKey, child: const MappingScreen()),
+          ),
+          GoRoute(
+            path: '/waypoints',
+            pageBuilder: (c, s) =>
+                appShellPage(key: s.pageKey, child: const WaypointsScreen()),
+          ),
+          GoRoute(
+            path: '/monitoring',
+            pageBuilder: (c, s) =>
+                appShellPage(key: s.pageKey, child: const MonitoringScreen()),
+          ),
+          GoRoute(
+            path: '/params',
+            pageBuilder: (c, s) =>
+                appShellPage(key: s.pageKey, child: const ParamsScreen()),
+          ),
+          GoRoute(
+            path: '/logs',
+            pageBuilder: (c, s) =>
+                appShellPage(key: s.pageKey, child: const LogsScreen()),
+          ),
+          GoRoute(
+            path: '/fleet',
+            pageBuilder: (c, s) =>
+                appShellPage(key: s.pageKey, child: const FleetScreen()),
+          ),
+          GoRoute(
+            path: '/settings',
+            pageBuilder: (c, s) =>
+                appShellPage(key: s.pageKey, child: const SettingsScreen()),
+          ),
         ],
       ),
     ],

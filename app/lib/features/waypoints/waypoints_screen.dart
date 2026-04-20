@@ -10,6 +10,7 @@ import '../../core/ros/ros_client.dart';
 import '../../core/ros/topics.dart';
 import '../../core/storage/hive_boxes.dart';
 import '../../core/storage/models/waypoint.dart';
+import '../../l10n/app_localizations.dart';
 
 class WaypointsScreen extends ConsumerStatefulWidget {
   const WaypointsScreen({super.key});
@@ -58,7 +59,9 @@ class _WaypointsScreenState extends ConsumerState<WaypointsScreen> {
 
   Future<void> _createMission() async {
     final client = ref.read(activeRosClientProvider);
-    final name = await _askText('Tên mission', initial: 'Mission mới');
+    final l10n = AppLocalizations.of(context);
+    final name = await _askText(l10n.waypointsMissionNameTitle,
+        initial: l10n.waypointsMissionNew);
     if (name == null) return;
     final mission = Mission(
       id: const Uuid().v4(),
@@ -73,7 +76,9 @@ class _WaypointsScreenState extends ConsumerState<WaypointsScreen> {
     final m = _selected;
     final p = _lastPose;
     if (m == null || p == null) return;
-    final label = await _askText('Label waypoint', initial: 'P${m.waypoints.length + 1}');
+    final l10n = AppLocalizations.of(context);
+    final label = await _askText(l10n.waypointsWaypointLabelTitle,
+        initial: 'P${m.waypoints.length + 1}');
     m.waypoints.add(Waypoint(
       x: p.pose.position.x,
       y: p.pose.position.y,
@@ -90,10 +95,11 @@ class _WaypointsScreenState extends ConsumerState<WaypointsScreen> {
     final yCtrl = TextEditingController(text: w.y.toStringAsFixed(2));
     final yawCtrl = TextEditingController(text: w.yaw.toStringAsFixed(2));
     final labelCtrl = TextEditingController(text: w.label);
+    final l10n = AppLocalizations.of(context);
     final ok = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: Text('Waypoint #${index + 1}'),
+        title: Text(l10n.waypointsWaypointTitle(index + 1)),
         content: SingleChildScrollView(
           child: Column(
             children: [
@@ -119,10 +125,10 @@ class _WaypointsScreenState extends ConsumerState<WaypointsScreen> {
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Huỷ')),
+              child: Text(l10n.commonCancel)),
           FilledButton(
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('Lưu')),
+              child: Text(l10n.commonSave)),
         ],
       ),
     );
@@ -138,6 +144,7 @@ class _WaypointsScreenState extends ConsumerState<WaypointsScreen> {
   }
 
   Future<String?> _askText(String title, {String initial = ''}) async {
+    final l10n = AppLocalizations.of(context);
     final ctrl = TextEditingController(text: initial);
     return showDialog<String>(
       context: context,
@@ -147,10 +154,10 @@ class _WaypointsScreenState extends ConsumerState<WaypointsScreen> {
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Huỷ')),
+              child: Text(l10n.commonCancel)),
           FilledButton(
               onPressed: () => Navigator.pop(context, ctrl.text.trim()),
-              child: const Text('OK')),
+              child: Text(l10n.commonOk)),
         ],
       ),
     );
@@ -158,6 +165,7 @@ class _WaypointsScreenState extends ConsumerState<WaypointsScreen> {
 
   Future<void> _runMission(Mission m) async {
     final client = ref.read(activeRosClientProvider);
+    final l10n = AppLocalizations.of(context);
     if (client == null || m.waypoints.isEmpty) return;
     await _activeGoal?.cancel();
     final goal = Nav2Goals.navigateThroughPoses(
@@ -166,7 +174,8 @@ class _WaypointsScreenState extends ConsumerState<WaypointsScreen> {
         for (final w in m.waypoints) (x: w.x, y: w.y, yaw: w.yaw),
       ],
     );
-    setState(() => _progress = 'Sending mission (${m.waypoints.length} wpt)…');
+    setState(
+        () => _progress = l10n.waypointsSendingMission(m.waypoints.length));
     final handle = client.sendActionGoal(
       actionName: Nav2Actions.navigateThroughPoses,
       actionType: Nav2Actions.navigateThroughPosesType,
@@ -177,13 +186,14 @@ class _WaypointsScreenState extends ConsumerState<WaypointsScreen> {
       if (!mounted) return;
       final remaining =
           (fb['number_of_poses_remaining'] as num?)?.toInt();
-      setState(() => _progress =
-          'Running… ${remaining != null ? "$remaining wpt còn lại" : ""}');
+      setState(() => _progress = remaining != null
+          ? l10n.waypointsRunningRemaining(remaining)
+          : l10n.waypointsRunning);
     });
     handle.result.then((res) {
       if (!mounted) return;
       setState(() {
-        _progress = 'Result: ${res.status.name}';
+        _progress = l10n.mapGoalResult(res.status.name);
         _activeGoal = null;
       });
     });
@@ -191,6 +201,7 @@ class _WaypointsScreenState extends ConsumerState<WaypointsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final client = ref.watch(activeRosClientProvider);
     final missions = HiveBoxes.missions.values
         .where((m) => client == null || m.robotId == client.profile.id)
@@ -208,10 +219,10 @@ class _WaypointsScreenState extends ConsumerState<WaypointsScreen> {
                   child: Row(
                     children: [
                       Expanded(
-                          child: Text('Missions',
+                          child: Text(l10n.waypointsMissions,
                               style: Theme.of(context).textTheme.titleMedium)),
                       IconButton(
-                        tooltip: 'Tạo mission',
+                        tooltip: l10n.waypointsNewMissionTooltip,
                         onPressed: _createMission,
                         icon: const Icon(Icons.add),
                       ),
@@ -225,7 +236,8 @@ class _WaypointsScreenState extends ConsumerState<WaypointsScreen> {
                         ListTile(
                           selected: _selected?.id == m.id,
                           title: Text(m.name),
-                          subtitle: Text('${m.waypoints.length} waypoint'),
+                          subtitle:
+                              Text(l10n.waypointsWaypointCount(m.waypoints.length)),
                           onTap: () => setState(() => _selected = m),
                           trailing: IconButton(
                             icon: const Icon(Icons.delete_outline),
@@ -251,10 +263,10 @@ class _WaypointsScreenState extends ConsumerState<WaypointsScreen> {
   }
 
   Widget _missionDetail() {
+    final l10n = AppLocalizations.of(context);
     final m = _selected;
     if (m == null) {
-      return const Center(
-          child: Text('Chọn hoặc tạo mission ở panel bên trái.'));
+      return Center(child: Text(l10n.waypointsSelectMission));
     }
     return Padding(
       padding: const EdgeInsets.all(16),
@@ -277,7 +289,7 @@ class _WaypointsScreenState extends ConsumerState<WaypointsScreen> {
                     await _activeGoal?.cancel();
                   },
                   icon: const Icon(Icons.cancel_outlined),
-                  label: const Text('Cancel'),
+                  label: Text(l10n.waypointsCancelNav),
                 ),
             ],
           ),
@@ -288,12 +300,12 @@ class _WaypointsScreenState extends ConsumerState<WaypointsScreen> {
               FilledButton.icon(
                 onPressed: _lastPose == null ? null : _addCurrentPose,
                 icon: const Icon(Icons.add_location_alt),
-                label: const Text('Thêm từ pose hiện tại'),
+                label: Text(l10n.waypointsAddFromPose),
               ),
               FilledButton.icon(
                 onPressed: m.waypoints.isEmpty ? null : () => _runMission(m),
                 icon: const Icon(Icons.play_arrow),
-                label: const Text('Run mission'),
+                label: Text(l10n.waypointsRunMission),
               ),
               OutlinedButton.icon(
                 onPressed: m.waypoints.isEmpty
@@ -304,16 +316,15 @@ class _WaypointsScreenState extends ConsumerState<WaypointsScreen> {
                         setState(() {});
                       },
                 icon: const Icon(Icons.clear_all),
-                label: const Text('Xoá tất cả'),
+                label: Text(l10n.waypointsDeleteAll),
               ),
             ],
           ),
           const Divider(height: 24),
           Expanded(
             child: m.waypoints.isEmpty
-                ? const Center(
-                    child: Text(
-                        'Chưa có waypoint. Lái robot tới vị trí rồi bấm "Thêm từ pose hiện tại".'))
+                ? Center(
+                    child: Text(l10n.waypointsEmptyHint))
                 : ReorderableListView.builder(
                     itemCount: m.waypoints.length,
                     onReorder: (oldI, newI) async {
@@ -328,7 +339,8 @@ class _WaypointsScreenState extends ConsumerState<WaypointsScreen> {
                       return ListTile(
                         key: ValueKey('${m.id}-$i'),
                         leading: CircleAvatar(child: Text('${i + 1}')),
-                        title: Text(w.label.isEmpty ? 'Waypoint' : w.label),
+                        title: Text(
+                            w.label.isEmpty ? l10n.waypointsWaypoint : w.label),
                         subtitle: Text(
                             'x=${w.x.toStringAsFixed(2)}  y=${w.y.toStringAsFixed(2)}  yaw=${w.yaw.toStringAsFixed(2)}'),
                         trailing: Wrap(

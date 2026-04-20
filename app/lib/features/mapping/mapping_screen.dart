@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/ros/ros_client.dart';
 import '../../core/ros/topics.dart';
+import '../../l10n/app_localizations.dart';
 
 class MappingScreen extends ConsumerStatefulWidget {
   const MappingScreen({super.key});
@@ -34,6 +35,7 @@ class _MappingScreenState extends ConsumerState<MappingScreen> {
   Future<void> _slam(String action) async {
     final client = ref.read(activeRosClientProvider);
     if (client == null) return;
+    final l10n = AppLocalizations.of(context);
     setState(() => _busy = true);
     try {
       final res = await client.callService(
@@ -43,13 +45,14 @@ class _MappingScreenState extends ConsumerState<MappingScreen> {
       );
       if (!mounted) return;
       setState(() {
-        _last = 'SLAM $action: ${res?['message'] ?? "sent"}';
+        _last = l10n.mappingSlamResult(
+            action, res?['message']?.toString() ?? 'sent');
         if (action == 'start') _running = true;
         if (action == 'stop') _running = false;
       });
     } catch (e) {
       if (!mounted) return;
-      setState(() => _last = 'Lỗi: $e');
+      setState(() => _last = l10n.mappingError(e.toString()));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -58,6 +61,7 @@ class _MappingScreenState extends ConsumerState<MappingScreen> {
   Future<void> _save() async {
     final client = ref.read(activeRosClientProvider);
     if (client == null) return;
+    final l10n = AppLocalizations.of(context);
     setState(() => _busy = true);
     try {
       await client.callService(
@@ -66,10 +70,10 @@ class _MappingScreenState extends ConsumerState<MappingScreen> {
         request: {'name': _nameCtrl.text.trim()},
       );
       if (!mounted) return;
-      setState(() => _last = 'Đã yêu cầu lưu map "${_nameCtrl.text}"');
+      setState(() => _last = l10n.mappingSaveRequested(_nameCtrl.text.trim()));
     } catch (e) {
       if (!mounted) return;
-      setState(() => _last = 'Save lỗi: $e');
+      setState(() => _last = l10n.mappingSaveError(e.toString()));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -77,6 +81,7 @@ class _MappingScreenState extends ConsumerState<MappingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -86,21 +91,21 @@ class _MappingScreenState extends ConsumerState<MappingScreen> {
             children: [
               const Icon(Icons.layers_outlined),
               const SizedBox(width: 8),
-              Text('SLAM Mapping',
+              Text(l10n.mappingTitle,
                   style: Theme.of(context).textTheme.headlineSmall),
               const Spacer(),
               if (_running)
-                const Chip(
+                Chip(
                   avatar:
-                      CircleAvatar(backgroundColor: Colors.green, radius: 6),
-                  label: Text('Đang mapping'),
+                      const CircleAvatar(backgroundColor: Colors.green, radius: 6),
+                  label: Text(l10n.mappingRunning),
                 ),
             ],
           ),
           const SizedBox(height: 16),
           TextField(
             controller: _nameCtrl,
-            decoration: const InputDecoration(labelText: 'Map name'),
+            decoration: InputDecoration(labelText: l10n.mappingMapName),
           ),
           const SizedBox(height: 24),
           Wrap(
@@ -110,27 +115,27 @@ class _MappingScreenState extends ConsumerState<MappingScreen> {
               FilledButton.icon(
                 onPressed: (_running || _busy) ? null : () => _slam('start'),
                 icon: const Icon(Icons.play_arrow),
-                label: const Text('Start'),
+                label: Text(l10n.mappingStart),
               ),
               FilledButton.tonalIcon(
                 onPressed: (!_running || _busy) ? null : () => _slam('stop'),
                 icon: const Icon(Icons.stop),
-                label: const Text('Stop'),
+                label: Text(l10n.mappingStop),
               ),
               FilledButton.icon(
                 onPressed: _busy ? null : _save,
                 icon: const Icon(Icons.save),
-                label: const Text('Save map'),
+                label: Text(l10n.mappingSaveMap),
               ),
               OutlinedButton.icon(
                 onPressed: _busy ? null : () => _slam('reset'),
                 icon: const Icon(Icons.restart_alt),
-                label: const Text('Reset'),
+                label: Text(l10n.mappingReset),
               ),
               OutlinedButton.icon(
                 onPressed: () => context.go('/map'),
                 icon: const Icon(Icons.map_outlined),
-                label: const Text('Xem real-time ở Map'),
+                label: Text(l10n.mappingOpenMap),
               ),
             ],
           ),
@@ -156,13 +161,12 @@ class _MappingScreenState extends ConsumerState<MappingScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Quy trình quét bản đồ',
-                      style: TextStyle(fontWeight: FontWeight.w600)),
+                  Text(
+                    l10n.mappingHowToTitle,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
                   const SizedBox(height: 8),
-                  const Text('1. Bấm Start để chạy slam_toolbox.\n'
-                      '2. Sang tab Map hoặc Teleop, lái robot đi chậm quanh khu vực.\n'
-                      '3. Khi thấy map đủ chi tiết, quay lại đây và bấm Save map.\n'
-                      '4. Sau khi save, có thể Stop để tắt SLAM → chuyển sang chế độ navigation.'),
+                  Text(l10n.mappingHowToBody),
                 ],
               ),
             ),

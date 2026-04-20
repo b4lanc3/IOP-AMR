@@ -10,6 +10,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
   cupertino_icons: ^1.0.8
 
   # ROS2 bridge — dùng raw WebSocket (rosbridge v2) tự viết,
@@ -29,7 +31,6 @@ dependencies:
 
   # Input
   gamepads: ^0.1.2
-  flutter_joystick: ^0.2.2
 
   # Media
   flutter_mjpeg: ^2.0.0
@@ -40,7 +41,7 @@ dependencies:
   # Utilities
   collection: ^1.18.0
   logger: ^2.4.0
-  intl: ^0.19.0
+  intl: ^0.20.2
   uuid: ^4.4.2
   package_info_plus: ^8.0.0
 
@@ -77,6 +78,7 @@ msix_config:
   publisher: CN=IOP-AMR Control
 
 flutter:
+  generate: true
   uses-material-design: true
   assets:
     - assets/images/

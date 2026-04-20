@@ -17,8 +17,10 @@ void main(List<String> args) async {
   final port =
       args.isNotEmpty ? int.tryParse(args.first) ?? _port : _port;
   final server = await HttpServer.bind(InternetAddress.anyIPv4, port);
-  print('[mock-rosbridge] Listening on ws://${server.address.host}:$port');
-  print('  Ctrl+C để thoát. Bật app, nhập host=localhost port=$port.');
+  stdout.writeln(
+      '[mock-rosbridge] Listening on ws://${server.address.host}:$port');
+  stdout.writeln(
+      '  Ctrl+C để thoát. Bật app, nhập host=localhost port=$port.');
 
   await for (final req in server) {
     if (WebSocketTransformer.isUpgradeRequest(req)) {
@@ -49,12 +51,12 @@ class _MockClient {
   int _t = 0;
 
   void start() {
-    print('[mock-rosbridge] client connected');
+    stdout.writeln('[mock-rosbridge] client connected');
     socket.listen(_onMessage, onDone: _cleanup, onError: (_) => _cleanup());
   }
 
   void _cleanup() {
-    print('[mock-rosbridge] client disconnected');
+    stdout.writeln('[mock-rosbridge] client disconnected');
     _batteryTimer?.cancel();
     _statsTimer?.cancel();
     _odomTimer?.cancel();
@@ -98,10 +100,10 @@ class _MockClient {
           _onActionGoal(msg);
           break;
         default:
-          print('[mock-rosbridge] unknown op: $op');
+          stdout.writeln('[mock-rosbridge] unknown op: $op');
       }
     } catch (e) {
-      print('[mock-rosbridge] parse error: $e');
+      stdout.writeln('[mock-rosbridge] parse error: $e');
     }
   }
 

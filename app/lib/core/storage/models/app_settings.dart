@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 
+import 'app_language.dart';
+
 /// Đơn vị tốc độ hiển thị trên UI (ROS nội bộ luôn là m/s và rad/s).
 enum DisplayUnits { metric, imperial }
 
@@ -14,6 +16,7 @@ class AppSettings {
   bool autoReconnect;
   bool showGridOnLidar;
   String? activeGamepadProfileId;
+  AppLanguage language;
 
   AppSettings({
     this.themeMode = ThemeMode.system,
@@ -24,6 +27,7 @@ class AppSettings {
     this.autoReconnect = true,
     this.showGridOnLidar = true,
     this.activeGamepadProfileId,
+    this.language = AppLanguage.vietnamese,
   });
 
   AppSettings copyWith({
@@ -35,6 +39,7 @@ class AppSettings {
     bool? autoReconnect,
     bool? showGridOnLidar,
     String? activeGamepadProfileId,
+    AppLanguage? language,
   }) =>
       AppSettings(
         themeMode: themeMode ?? this.themeMode,
@@ -46,6 +51,7 @@ class AppSettings {
         showGridOnLidar: showGridOnLidar ?? this.showGridOnLidar,
         activeGamepadProfileId:
             activeGamepadProfileId ?? this.activeGamepadProfileId,
+        language: language ?? this.language,
       );
 }
 
@@ -60,6 +66,7 @@ class AppSettingsAdapter extends TypeAdapter<AppSettings> {
     for (var i = 0; i < n; i++) {
       f[r.readByte()] = r.read();
     }
+    final langIdx = (f[8] as int?) ?? 0;
     return AppSettings(
       themeMode: ThemeMode.values[(f[0] as int?) ?? 0],
       units: DisplayUnits.values[(f[1] as int?) ?? 0],
@@ -69,12 +76,14 @@ class AppSettingsAdapter extends TypeAdapter<AppSettings> {
       autoReconnect: (f[5] as bool?) ?? true,
       showGridOnLidar: (f[6] as bool?) ?? true,
       activeGamepadProfileId: f[7] as String?,
+      language: AppLanguage.values[
+          langIdx.clamp(0, AppLanguage.values.length - 1)],
     );
   }
 
   @override
   void write(BinaryWriter w, AppSettings o) {
-    w.writeByte(8);
+    w.writeByte(9);
     w.writeByte(0); w.write(o.themeMode.index);
     w.writeByte(1); w.write(o.units.index);
     w.writeByte(2); w.write(o.defaultMaxLinear);
@@ -83,5 +92,6 @@ class AppSettingsAdapter extends TypeAdapter<AppSettings> {
     w.writeByte(5); w.write(o.autoReconnect);
     w.writeByte(6); w.write(o.showGridOnLidar);
     w.writeByte(7); w.write(o.activeGamepadProfileId);
+    w.writeByte(8); w.write(o.language.index);
   }
 }

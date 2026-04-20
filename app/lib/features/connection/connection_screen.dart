@@ -12,6 +12,7 @@ import '../../core/storage/hive_boxes.dart';
 import '../../core/storage/models/robot_profile.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/ui_kit.dart';
+import '../../l10n/app_localizations.dart';
 
 class ConnectionScreen extends ConsumerStatefulWidget {
   const ConnectionScreen({super.key});
@@ -42,8 +43,9 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
         }
       }
       if (mounted) {
+        final l10n = AppLocalizations.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Quét xong: ${found.length} robot')),
+          SnackBar(content: Text(l10n.connectionScanDone(found.length))),
         );
       }
     } finally {
@@ -52,9 +54,10 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
   }
 
   Future<void> _addOrEdit([RobotProfile? original]) async {
+    final l10n = AppLocalizations.of(context);
     final result = await showDialog<RobotProfile>(
       context: context,
-      builder: (_) => _RobotDialog(original: original),
+      builder: (_) => _RobotDialog(l10n: l10n, original: original),
     );
     if (result != null) {
       await HiveBoxes.robots.put(result.id, result);
@@ -62,18 +65,19 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
   }
 
   Future<void> _delete(RobotProfile p) async {
+    final l10n = AppLocalizations.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: Text('Xoá "${p.name}"?'),
-        content: const Text('Thao tác này không thể hoàn tác.'),
+        title: Text(l10n.connectionDeleteRobotTitle(p.name)),
+        content: Text(l10n.connectionDeleteRobotBody),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Huỷ')),
+              child: Text(l10n.commonCancel)),
           FilledButton(
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('Xoá')),
+              child: Text(l10n.commonDelete)),
         ],
       ),
     );
@@ -89,10 +93,10 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
     if (client?.isConnected ?? false) {
       context.go('/dashboard');
     } else {
+      final l10n = AppLocalizations.of(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-              'Không kết nối được ${profile.name} — đang tự retry…'),
+          content: Text(l10n.connectionFailedRetry(profile.name)),
         ),
       );
     }
@@ -100,13 +104,14 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final robotsAsync = ref.watch(robotProfilesProvider);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Kết nối robot'),
+        title: Text(l10n.connectionTitle),
         actions: [
           IconButton(
-            tooltip: 'Quét mDNS',
+            tooltip: l10n.connectionScanMdns,
             icon: _scanning
                 ? const SizedBox(
                     height: 20,
@@ -117,7 +122,7 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
             onPressed: _scanning ? null : _scan,
           ),
           IconButton(
-            tooltip: 'Cài đặt',
+            tooltip: l10n.connectionSettings,
             icon: const Icon(Icons.settings_outlined),
             onPressed: () => context.go('/settings'),
           ),
@@ -125,7 +130,7 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
       ),
       body: robotsAsync.when(
         data: (robots) {
-          if (robots.isEmpty) return const _EmptyState();
+          if (robots.isEmpty) return _EmptyState(l10n: l10n);
           final sorted = robots.toList()
             ..sort((a, b) => a.name.compareTo(b.name));
           return CustomScrollView(
@@ -134,27 +139,25 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
                   child: HeroBanner(
-                    title: 'Fleet & kết nối',
-                    subtitle:
-                        'Chọn robot để làm việc, hoặc thêm IP thủ công / quét mDNS. '
-                        'Sau khi nối rosbridge, app sẽ nhớ profile trên máy này.',
+                    title: l10n.connectionHeroTitle,
+                    subtitle: l10n.connectionHeroSubtitle,
                     icon: Icons.hub_rounded,
                     chips: [
                       _HeroChip(
                         icon: Icons.smart_toy_rounded,
-                        label: '${sorted.length} robot đã lưu',
+                        label: l10n.connectionRobotsSaved(sorted.length),
                         color: AppTheme.brandAccent,
                       ),
-                      const _HeroChip(
+                      _HeroChip(
                         icon: Icons.cable_rounded,
-                        label: 'rosbridge 9090 · video 8080',
+                        label: l10n.connectionRosbridgeChip,
                         color: AppTheme.brandPrimary,
                       ),
                     ],
                   ),
                 ),
               ),
-              const SliverToBoxAdapter(child: _NetworkHintCard()),
+              SliverToBoxAdapter(child: _NetworkHintCard(l10n: l10n)),
               SliverPadding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 88),
                 sliver: SliverList.separated(
@@ -163,6 +166,7 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
                   itemBuilder: (context, i) {
                     final r = sorted[i];
                     return _RobotCard(
+                      l10n: l10n,
                       profile: r,
                       onConnect: () => _connect(r),
                       onEdit: () => _addOrEdit(r),
@@ -174,13 +178,14 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
             ],
           );
         },
-        error: (e, __) => Center(child: Text('Lỗi: $e')),
+        error: (e, __) =>
+            Center(child: Text(l10n.connectionError(e.toString()))),
         loading: () => const Center(child: CircularProgressIndicator()),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _addOrEdit(),
         icon: const Icon(Icons.add),
-        label: const Text('Thêm IP'),
+        label: Text(l10n.connectionAddIp),
       ),
     );
   }
@@ -188,12 +193,14 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
 
 class _RobotCard extends StatefulWidget {
   const _RobotCard({
+    required this.l10n,
     required this.profile,
     required this.onConnect,
     required this.onEdit,
     required this.onDelete,
   });
 
+  final AppLocalizations l10n;
   final RobotProfile profile;
   final VoidCallback onConnect;
   final VoidCallback onEdit;
@@ -223,7 +230,8 @@ class _RobotCardState extends State<_RobotCard> {
       sw.stop();
       setState(() => _pingResult = '${sw.elapsedMilliseconds} ms');
     } catch (e) {
-      setState(() => _pingResult = 'không reach');
+      setState(
+          () => _pingResult = widget.l10n.connectionPingUnreachable);
     } finally {
       if (mounted) setState(() => _pinging = false);
     }
@@ -284,17 +292,20 @@ class _RobotCardState extends State<_RobotCard> {
                     children: [
                       _MiniPill(
                         icon: Icons.folder_outlined,
-                        label: 'ns ${p.namespace.isEmpty ? "—" : p.namespace}',
+                        label: widget.l10n.connectionNamespacePill(
+                          p.namespace.isEmpty ? '—' : p.namespace,
+                        ),
                       ),
                       _MiniPill(
                         icon: Icons.videocam_outlined,
-                        label: 'video ${p.videoPort}',
+                        label: widget.l10n.connectionVideoPill(p.videoPort),
                       ),
                       if (_pingResult != null)
                         _MiniPill(
                           icon: Icons.network_ping,
-                          label: 'ping $_pingResult',
-                          color: _pingResult == 'không reach'
+                          label: widget.l10n.connectionPingPill(_pingResult!),
+                          color: _pingResult ==
+                                  widget.l10n.connectionPingUnreachable
                               ? scheme.error
                               : AppTheme.brandSuccess,
                         ),
@@ -304,7 +315,7 @@ class _RobotCardState extends State<_RobotCard> {
               ),
             ),
             IconButton(
-              tooltip: 'Test ping',
+              tooltip: widget.l10n.connectionPingTooltip,
               onPressed: _pinging ? null : _ping,
               icon: _pinging
                   ? const SizedBox(
@@ -314,12 +325,12 @@ class _RobotCardState extends State<_RobotCard> {
                   : const Icon(Icons.network_ping),
             ),
             IconButton(
-              tooltip: 'Sửa',
+              tooltip: widget.l10n.connectionEditTooltip,
               onPressed: widget.onEdit,
               icon: const Icon(Icons.edit_outlined),
             ),
             IconButton(
-              tooltip: 'Xoá',
+              tooltip: widget.l10n.connectionDeleteTooltip,
               onPressed: widget.onDelete,
               icon: const Icon(Icons.delete_outline),
             ),
@@ -327,7 +338,7 @@ class _RobotCardState extends State<_RobotCard> {
             FilledButton.icon(
               onPressed: widget.onConnect,
               icon: const Icon(Icons.link_rounded),
-              label: const Text('Kết nối'),
+              label: Text(widget.l10n.connectionConnect),
             ),
           ],
         ),
@@ -435,7 +446,9 @@ class _HeroChip extends StatelessWidget {
 
 /// Gợi ý chọn IP (LAN vs Tailscale) — không thay thế cấu hình firewall/router.
 class _NetworkHintCard extends StatelessWidget {
-  const _NetworkHintCard();
+  const _NetworkHintCard({required this.l10n});
+
+  final AppLocalizations l10n;
 
   @override
   Widget build(BuildContext context) {
@@ -446,33 +459,23 @@ class _NetworkHintCard extends StatelessWidget {
         margin: EdgeInsets.zero,
         child: ExpansionTile(
           leading: Icon(Icons.help_outline_rounded, color: scheme.primary),
-          title: const Text('Mạng & robot: LAN, Tailscale, máy khác'),
-          subtitle: const Text('Khi nào dùng IP LAN, khi nào dùng 100.x…'),
+          title: Text(l10n.connectionNetworkHelpTitle),
+          subtitle: Text(l10n.connectionNetworkHelpSubtitle),
           childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          children: const [
+          children: [
             _HintBullet(
-              title: 'Cùng Wi‑Fi / LAN (thường không cần Internet)',
-              body:
-                  'PC và Jetson cùng switch/Wi‑Fi: dùng IP mạng nội bộ của robot (vd. 192.168.x.x). '
-                  'Đảm bảo rosbridge lắng nghe 0.0.0.0:9090 trên Jetson. '
-                  'Cách này không phụ thuộc Tailscale.',
+              title: l10n.connectionHintLanTitle,
+              body: l10n.connectionHintLanBody,
             ),
-            SizedBox(height: 12),
+            const SizedBox(height: 12),
             _HintBullet(
-              title: 'Tailscale (IP 100.x.x.x — ví dụ DDE-AMR đặt sẵn)',
-              body:
-                  'Hai máy cùng tailnet: kết nối qua IP Tailscale được gán cho Jetson. '
-                  'Phù hợp khi laptop và robot khác subnet hoặc ở xa. '
-                  'Nếu bạn muốn làm việc “offline” nhưng vẫn cùng phòng: ưu tiên IP LAN thay vì 100.x. '
-                  'Khi cả hai chỉ có Tailscale và mất Internet công cộng, kết nối phụ thuộc chế độ direct/relay của Tailscale.',
+              title: l10n.connectionHintTailscaleTitle,
+              body: l10n.connectionHintTailscaleBody,
             ),
-            SizedBox(height: 12),
+            const SizedBox(height: 12),
             _HintBullet(
-              title: 'Không cùng Tailscale',
-              body:
-                  'Gắn máy vào cùng tailnet, hoặc dùng VPN khác (WireGuard, ZeroTier…), '
-                  'hoặc mở cổng rosbridge qua router (NAT + bảo mật). '
-                  'Trong app: thêm profile mới với IP/port tương ứng.',
+              title: l10n.connectionHintNotTailscaleTitle,
+              body: l10n.connectionHintNotTailscaleBody,
             ),
           ],
         ),
@@ -508,7 +511,9 @@ class _HintBullet extends StatelessWidget {
 }
 
 class _EmptyState extends StatelessWidget {
-  const _EmptyState();
+  const _EmptyState({required this.l10n});
+
+  final AppLocalizations l10n;
 
   @override
   Widget build(BuildContext context) {
@@ -532,7 +537,7 @@ class _EmptyState extends StatelessWidget {
                   ),
                   const SizedBox(height: 20),
                   Text(
-                    'Chưa có robot',
+                    l10n.connectionEmptyTitle,
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
@@ -540,8 +545,7 @@ class _EmptyState extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    'Thêm địa chỉ IP Jetson (rosbridge thường là cổng 9090) '
-                    'hoặc quét mDNS nếu robot quảng bá trên LAN.',
+                    l10n.connectionEmptyBody,
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: scheme.onSurfaceVariant,
@@ -549,9 +553,11 @@ class _EmptyState extends StatelessWidget {
                         ),
                   ),
                   const SizedBox(height: 20),
-                  const _TipRow(icon: Icons.add_circle_outline, text: 'Nút Thêm IP — nhập host, port, namespace'),
+                  _TipRow(
+                      icon: Icons.add_circle_outline,
+                      text: l10n.connectionTipAddIp),
                   const SizedBox(height: 8),
-                  const _TipRow(icon: Icons.radar, text: 'Quét mDNS — tìm robot trên mạng cục bộ'),
+                  _TipRow(icon: Icons.radar, text: l10n.connectionTipMdns),
                 ],
               ),
             ),
@@ -583,7 +589,9 @@ class _TipRow extends StatelessWidget {
 }
 
 class _RobotDialog extends StatefulWidget {
-  const _RobotDialog({this.original});
+  const _RobotDialog({required this.l10n, this.original});
+
+  final AppLocalizations l10n;
   final RobotProfile? original;
 
   @override
@@ -627,9 +635,11 @@ class _RobotDialogState extends State<_RobotDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = widget.l10n;
     final isEdit = widget.original != null;
     return AlertDialog(
-      title: Text(isEdit ? 'Sửa robot' : 'Thêm robot'),
+      title:
+          Text(isEdit ? l10n.connectionDialogEditTitle : l10n.connectionDialogAddTitle),
       content: Form(
         key: _form,
         child: SingleChildScrollView(
@@ -637,24 +647,24 @@ class _RobotDialogState extends State<_RobotDialog> {
             children: [
               TextFormField(
                 controller: _name,
-                decoration: const InputDecoration(labelText: 'Tên hiển thị'),
+                decoration: InputDecoration(labelText: l10n.connectionDisplayName),
                 validator: (v) =>
-                    v == null || v.isEmpty ? 'Nhập tên' : null,
+                    v == null || v.isEmpty ? l10n.connectionNameRequired : null,
               ),
               TextFormField(
                 controller: _host,
                 decoration:
-                    const InputDecoration(labelText: 'IP / hostname'),
+                    InputDecoration(labelText: l10n.connectionHost),
                 validator: (v) =>
-                    v == null || v.isEmpty ? 'Nhập host' : null,
+                    v == null || v.isEmpty ? l10n.connectionHostRequired : null,
               ),
               Row(
                 children: [
                   Expanded(
                     child: TextFormField(
                       controller: _port,
-                      decoration: const InputDecoration(
-                          labelText: 'rosbridge port'),
+                      decoration: InputDecoration(
+                          labelText: l10n.connectionRosbridgePort),
                       keyboardType: TextInputType.number,
                     ),
                   ),
@@ -662,8 +672,8 @@ class _RobotDialogState extends State<_RobotDialog> {
                   Expanded(
                     child: TextFormField(
                       controller: _videoPort,
-                      decoration: const InputDecoration(
-                          labelText: 'video port'),
+                      decoration: InputDecoration(
+                          labelText: l10n.connectionVideoPort),
                       keyboardType: TextInputType.number,
                     ),
                   ),
@@ -671,22 +681,22 @@ class _RobotDialogState extends State<_RobotDialog> {
               ),
               TextFormField(
                 controller: _ns,
-                decoration: const InputDecoration(
-                  labelText: 'Namespace (optional)',
-                  hintText: 'vd: /robot_1',
+                decoration: InputDecoration(
+                  labelText: l10n.connectionNamespaceOptional,
+                  hintText: l10n.connectionNamespaceHint,
                 ),
               ),
               TextFormField(
                 controller: _token,
-                decoration: const InputDecoration(
-                  labelText: 'Auth token (optional)',
+                decoration: InputDecoration(
+                  labelText: l10n.connectionAuthTokenOptional,
                 ),
                 obscureText: true,
               ),
               SwitchListTile(
                 value: _useSsl,
                 onChanged: (v) => setState(() => _useSsl = v),
-                title: const Text('Dùng wss:// / https://'),
+                title: Text(l10n.connectionUseWss),
               ),
             ],
           ),
@@ -695,7 +705,7 @@ class _RobotDialogState extends State<_RobotDialog> {
       actions: [
         TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Huỷ')),
+            child: Text(l10n.commonCancel)),
         FilledButton(
           onPressed: () {
             if (!_form.currentState!.validate()) return;
@@ -715,7 +725,7 @@ class _RobotDialogState extends State<_RobotDialog> {
               ),
             );
           },
-          child: const Text('Lưu'),
+          child: Text(l10n.commonSave),
         ),
       ],
     );

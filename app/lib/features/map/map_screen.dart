@@ -7,6 +7,7 @@ import '../../core/ros/msg_types.dart';
 import '../../core/ros/nav2_goals.dart';
 import '../../core/ros/ros_client.dart';
 import '../../core/ros/topics.dart';
+import '../../l10n/app_localizations.dart';
 
 enum _TapMode { goal, initialPose }
 
@@ -106,8 +107,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   Future<void> _sendGoal(double worldX, double worldY) async {
     final client = ref.read(activeRosClientProvider);
     if (client == null) return;
+    final l10n = AppLocalizations.of(context);
     await _activeGoal?.cancel();
-    setState(() => _goalStatusText = 'Sending goal…');
+    setState(() => _goalStatusText = l10n.mapSendingGoal);
     final handle = client.sendActionGoal(
       actionName: Nav2Actions.navigateToPose,
       actionType: Nav2Actions.navigateToPoseType,
@@ -117,13 +119,14 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     handle.feedback.listen((fb) {
       final remaining = (fb['distance_remaining'] as num?)?.toDouble();
       if (!mounted) return;
-      setState(() => _goalStatusText =
-          'Executing… ${remaining != null ? "${remaining.toStringAsFixed(2)} m left" : ""}');
+      setState(() => _goalStatusText = remaining != null
+          ? l10n.mapExecutingLeft(remaining.toStringAsFixed(2))
+          : l10n.mapExecuting);
     });
     handle.result.then((res) {
       if (!mounted) return;
       setState(() {
-        _goalStatusText = 'Result: ${res.status.name}';
+        _goalStatusText = l10n.mapGoalResult(res.status.name);
         _activeGoal = null;
       });
     });
@@ -132,6 +135,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   Future<void> _publishInitialPose(double worldX, double worldY) async {
     final client = ref.read(activeRosClientProvider);
     if (client == null) return;
+    final l10n = AppLocalizations.of(context);
     final msg = {
       'header': const Header(frameId: 'map').toJson(),
       'pose': {
@@ -150,17 +154,19 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-          content: Text(
-              'Gửi initialpose: (${worldX.toStringAsFixed(2)}, ${worldY.toStringAsFixed(2)})')),
+          content: Text(l10n.mapInitialPoseSent(
+              worldX.toStringAsFixed(2), worldY.toStringAsFixed(2)))),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final grid = _grid;
+    final l10n = AppLocalizations.of(context);
     return Column(
       children: [
         _MapToolbar(
+          l10n: l10n,
           mode: _mode,
           zoom: _zoom,
           status: _goalStatusText,
@@ -171,7 +177,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               : () async {
                   await _activeGoal?.cancel();
                   if (mounted) {
-                    setState(() => _goalStatusText = 'Cancelling…');
+                    setState(() => _goalStatusText = l10n.mapCancelling);
                   }
                 },
           onRecenter: () => setState(() {
@@ -181,7 +187,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         ),
         Expanded(
           child: grid == null
-              ? const Center(child: Text('Đang chờ /map …'))
+              ? Center(child: Text(l10n.mapWaitingMap))
               : LayoutBuilder(
                   builder: (context, c) {
                     final scale = _scaleFor(c, grid);
@@ -238,6 +244,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
 class _MapToolbar extends StatelessWidget {
   const _MapToolbar({
+    required this.l10n,
     required this.mode,
     required this.zoom,
     required this.status,
@@ -247,6 +254,7 @@ class _MapToolbar extends StatelessWidget {
     required this.onRecenter,
   });
 
+  final AppLocalizations l10n;
   final _TapMode mode;
   final double zoom;
   final String? status;
@@ -262,16 +270,16 @@ class _MapToolbar extends StatelessWidget {
       child: Row(
         children: [
           SegmentedButton<_TapMode>(
-            segments: const [
+            segments: [
               ButtonSegment(
                 value: _TapMode.goal,
-                icon: Icon(Icons.flag_outlined),
-                label: Text('Tap → Goal'),
+                icon: const Icon(Icons.flag_outlined),
+                label: Text(l10n.mapTapGoal),
               ),
               ButtonSegment(
                 value: _TapMode.initialPose,
-                icon: Icon(Icons.gps_fixed),
-                label: Text('Tap → InitPose'),
+                icon: const Icon(Icons.gps_fixed),
+                label: Text(l10n.mapTapInitPose),
               ),
             ],
             selected: {mode},
@@ -291,7 +299,7 @@ class _MapToolbar extends StatelessWidget {
           Text('${(zoom * 100).toStringAsFixed(0)}%'),
           const SizedBox(width: 8),
           IconButton(
-            tooltip: 'Recenter',
+            tooltip: l10n.mapRecenterTooltip,
             onPressed: onRecenter,
             icon: const Icon(Icons.center_focus_strong),
           ),
@@ -308,7 +316,7 @@ class _MapToolbar extends StatelessWidget {
             OutlinedButton.icon(
               onPressed: onCancel,
               icon: const Icon(Icons.cancel_outlined),
-              label: const Text('Cancel goal'),
+              label: Text(l10n.mapCancelGoal),
             ),
         ],
       ),

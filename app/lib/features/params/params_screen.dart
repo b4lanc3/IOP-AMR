@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/ros/param_service.dart';
 import '../../core/ros/ros_client.dart';
+import '../../l10n/app_localizations.dart';
 
 /// Tune các param Nav2 thường dùng. Hỗ trợ cả slider double và switch bool.
 class ParamsScreen extends ConsumerStatefulWidget {
@@ -20,7 +21,6 @@ class _ParamDef {
   final double max;
   final int? divisions;
   final String? unit;
-  final String description;
   _ParamDef.double({
     required this.node,
     required this.name,
@@ -29,15 +29,13 @@ class _ParamDef {
     required this.max,
     this.divisions,
     this.unit,
-    this.description = '',
   })  : type = RosParamType.double,
         _initial = initial;
   _ParamDef.boolean({
     required this.node,
     required this.name,
     required bool initial,
-  })  : description = '',
-        type = RosParamType.boolean,
+  })  : type = RosParamType.boolean,
         min = 0,
         max = 1,
         divisions = null,
@@ -46,6 +44,17 @@ class _ParamDef {
 
   final dynamic _initial;
   String get id => '$node|$name';
+}
+
+String? _paramDescription(AppLocalizations l10n, _ParamDef d) {
+  if (d.node == 'controller_server' && d.name == 'FollowPath.max_vel_x') {
+    return l10n.paramsDescMaxVelX;
+  }
+  if (d.node == 'global_costmap/global_costmap' &&
+      d.name == 'inflation_layer.inflation_radius') {
+    return l10n.paramsDescInflationGlobal;
+  }
+  return null;
 }
 
 class _ParamsScreenState extends ConsumerState<ParamsScreen> {
@@ -58,7 +67,6 @@ class _ParamsScreenState extends ConsumerState<ParamsScreen> {
       max: 2.0,
       divisions: 40,
       unit: 'm/s',
-      description: 'Tốc độ tối đa của DWB khi bám đường',
     ),
     _ParamDef.double(
       node: 'controller_server',
@@ -86,7 +94,6 @@ class _ParamsScreenState extends ConsumerState<ParamsScreen> {
       max: 2.0,
       divisions: 40,
       unit: 'm',
-      description: 'Bán kính "thổi phồng" chướng ngại cho planner toàn cục',
     ),
     _ParamDef.double(
       node: 'local_costmap/local_costmap',
@@ -122,6 +129,7 @@ class _ParamsScreenState extends ConsumerState<ParamsScreen> {
   Future<void> _apply(_ParamDef def) async {
     final client = ref.read(activeRosClientProvider);
     if (client == null) return;
+    final l10n = AppLocalizations.of(context);
     final value = switch (def.type) {
       RosParamType.double => RosParamValue.fromDouble(
           (_values[def.id] as num).toDouble()),
@@ -134,11 +142,11 @@ class _ParamsScreenState extends ConsumerState<ParamsScreen> {
     try {
       final ok = await svc.setParam(def.name, value);
       if (!mounted) return;
-      setState(() => _lastStatus =
-          '${def.name} = ${_values[def.id]} — ${ok ? "OK" : "FAILED"}');
+      setState(() => _lastStatus = l10n.paramsSetStatus(
+          def.name, _values[def.id].toString(), ok ? 'OK' : 'FAILED'));
     } catch (e) {
       if (!mounted) return;
-      setState(() => _lastStatus = 'Lỗi ${def.name}: $e');
+      setState(() => _lastStatus = l10n.paramsSetError(def.name, e.toString()));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -147,6 +155,7 @@ class _ParamsScreenState extends ConsumerState<ParamsScreen> {
   Future<void> _readBack() async {
     final client = ref.read(activeRosClientProvider);
     if (client == null) return;
+    final l10n = AppLocalizations.of(context);
     setState(() => _busy = true);
     try {
       final nodes = _defs.map((d) => d.node).toSet();
@@ -168,10 +177,10 @@ class _ParamsScreenState extends ConsumerState<ParamsScreen> {
         }
       }
       if (!mounted) return;
-      setState(() => _lastStatus = 'Đã đọc lại tham số hiện tại từ node');
+      setState(() => _lastStatus = l10n.paramsReadBackOk);
     } catch (e) {
       if (!mounted) return;
-      setState(() => _lastStatus = 'Đọc param lỗi: $e');
+      setState(() => _lastStatus = l10n.paramsReadBackError(e.toString()));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -179,6 +188,7 @@ class _ParamsScreenState extends ConsumerState<ParamsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final grouped = <String, List<_ParamDef>>{};
     for (final d in _defs) {
       grouped.putIfAbsent(d.node, () => []).add(d);
@@ -189,25 +199,25 @@ class _ParamsScreenState extends ConsumerState<ParamsScreen> {
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
           children: [
             Row(children: [
-              Text('Nav2 live tuning',
+              Text(l10n.paramsNav2LiveTuning,
                   style: Theme.of(context).textTheme.headlineSmall),
               const Spacer(),
               FilledButton.tonalIcon(
                 onPressed: _busy ? null : _readBack,
                 icon: const Icon(Icons.cloud_download_outlined),
-                label: const Text('Read current'),
+                label: Text(l10n.paramsReadCurrent),
               ),
             ]),
             const SizedBox(height: 4),
             Text(
-              'Mỗi lần nhả slider/switch sẽ gửi rcl_interfaces/srv/SetParameters tới node tương ứng.',
+              l10n.paramsSubtitle,
               style: Theme.of(context).textTheme.bodySmall,
             ),
             const SizedBox(height: 12),
             for (final entry in grouped.entries) ...[
               Padding(
                 padding: const EdgeInsets.only(top: 12, bottom: 4, left: 4),
-                child: Text('Node: ${entry.key}',
+                child: Text(l10n.paramsNodeLabel(entry.key),
                     style: Theme.of(context)
                         .textTheme
                         .titleSmall
@@ -260,11 +270,13 @@ class _ParamsScreenState extends ConsumerState<ParamsScreen> {
   }
 
   Widget _paramTile(_ParamDef d) {
+    final l10n = AppLocalizations.of(context);
+    final desc = _paramDescription(l10n, d);
     final value = _values[d.id];
     if (d.type == RosParamType.boolean) {
       return SwitchListTile(
         title: Text(d.name),
-        subtitle: d.description.isEmpty ? null : Text(d.description),
+        subtitle: desc == null ? null : Text(desc),
         value: value as bool,
         onChanged: (v) {
           setState(() => _values[d.id] = v);
@@ -291,9 +303,8 @@ class _ParamsScreenState extends ConsumerState<ParamsScreen> {
               ),
             ],
           ),
-          if (d.description.isNotEmpty)
-            Text(d.description,
-                style: Theme.of(context).textTheme.bodySmall),
+          if (desc != null)
+            Text(desc, style: Theme.of(context).textTheme.bodySmall),
           Slider(
             value: v.clamp(d.min, d.max),
             min: d.min,

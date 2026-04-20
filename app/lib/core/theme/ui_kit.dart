@@ -6,7 +6,7 @@ import 'app_theme.dart';
 
 /// Logo mark gradient — dùng trong AppBar + drawer + hero banner.
 class BrandMark extends StatelessWidget {
-  const BrandMark({super.key, this.size = 36, this.rounded = 12});
+  const BrandMark({super.key, this.size = 36, this.rounded = 14});
   final double size;
   final double rounded;
 
@@ -45,7 +45,7 @@ class GradientIconBadge extends StatelessWidget {
     this.gradient,
     this.color,
     this.size = 40,
-    this.radius = 12,
+    this.radius = 14,
   });
 
   final IconData icon;
@@ -195,7 +195,7 @@ class SectionHeader extends StatelessWidget {
     return Row(
       children: [
         if (icon != null) ...[
-          GradientIconBadge(icon: icon!, color: accent, size: 36, radius: 10),
+          GradientIconBadge(icon: icon!, color: accent, size: 36, radius: 12),
           const SizedBox(width: 12),
         ],
         Expanded(
@@ -252,7 +252,7 @@ class HeroBanner extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
         gradient: gradient ??
             LinearGradient(
               colors: [
@@ -284,7 +284,7 @@ class HeroBanner extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               if (icon != null) ...[
-                GradientIconBadge(icon: icon!, size: 52, radius: 16),
+                GradientIconBadge(icon: icon!, size: 52, radius: 18),
                 const SizedBox(width: 16),
               ],
               Expanded(
@@ -385,7 +385,7 @@ class MetricCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                GradientIconBadge(icon: icon, color: c, size: 34, radius: 10),
+                GradientIconBadge(icon: icon, color: c, size: 34, radius: 12),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
@@ -484,9 +484,13 @@ class AccentCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Container(
-              width: 4,
+              width: 5,
               decoration: BoxDecoration(
                 gradient: gradient ?? AppTheme.brandGradient,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(AppTheme.radiusLg),
+                  bottomLeft: Radius.circular(AppTheme.radiusLg),
+                ),
               ),
             ),
             Expanded(child: Padding(padding: padding, child: child)),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../core/ros/msg_types.dart';
 import '../../core/ros/ros_client.dart';
 import '../../core/ros/topics.dart';
@@ -22,24 +23,9 @@ class _MainShellState extends ConsumerState<MainShell> {
   bool _estopEngaged = false;
   int _mobileBarIndex = 0;
 
-  static const _destinations = <_NavItem>[
-    _NavItem(route: '/dashboard', icon: Icons.dashboard_outlined, selectedIcon: Icons.dashboard, label: 'Dashboard'),
-    _NavItem(route: '/teleop', icon: Icons.gamepad_outlined, selectedIcon: Icons.sports_esports, label: 'Teleop'),
-    _NavItem(route: '/camera', icon: Icons.videocam_outlined, selectedIcon: Icons.videocam, label: 'Camera'),
-    _NavItem(route: '/lidar', icon: Icons.radar_outlined, selectedIcon: Icons.radar, label: 'LiDAR'),
-    _NavItem(route: '/map', icon: Icons.map_outlined, selectedIcon: Icons.map, label: 'Map'),
-    _NavItem(route: '/mapping', icon: Icons.layers_outlined, selectedIcon: Icons.layers, label: 'Mapping'),
-    _NavItem(route: '/waypoints', icon: Icons.place_outlined, selectedIcon: Icons.place, label: 'Waypoints'),
-    _NavItem(route: '/monitoring', icon: Icons.monitor_heart_outlined, selectedIcon: Icons.monitor_heart, label: 'Monitor'),
-    _NavItem(route: '/params', icon: Icons.tune, selectedIcon: Icons.tune, label: 'Params'),
-    _NavItem(route: '/logs', icon: Icons.history, selectedIcon: Icons.history_edu, label: 'Logs'),
-    _NavItem(route: '/fleet', icon: Icons.hub_outlined, selectedIcon: Icons.hub, label: 'Fleet'),
-    _NavItem(route: '/settings', icon: Icons.settings_outlined, selectedIcon: Icons.settings, label: 'Settings'),
-  ];
-
   static const _mobileBarRoutes = [
     '/dashboard',
-    '/teleop',
+    '/camera',
     '/map',
     '/monitoring',
     '/settings',
@@ -65,16 +51,89 @@ class _MainShellState extends ConsumerState<MainShell> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('E-stop service lỗi: $e')),
+          SnackBar(
+            content: Text(
+              AppLocalizations.of(context).estopServiceError(e.toString()),
+            ),
+          ),
         );
       }
     }
   }
 
-  int _indexForRoute(String location) {
-    final i = _destinations.indexWhere((d) => location.startsWith(d.route));
+  int _indexForRoute(String location, List<_NavItem> destinations) {
+    final i = destinations.indexWhere((d) => location.startsWith(d.route));
     return i == -1 ? 0 : i;
   }
+
+  List<_NavItem> _navItems(AppLocalizations l10n) => [
+        _NavItem(
+          route: '/dashboard',
+          icon: Icons.dashboard_outlined,
+          selectedIcon: Icons.dashboard,
+          label: l10n.navDashboard,
+        ),
+        _NavItem(
+          route: '/camera',
+          icon: Icons.videocam_outlined,
+          selectedIcon: Icons.videocam,
+          label: l10n.navCamera,
+        ),
+        _NavItem(
+          route: '/lidar',
+          icon: Icons.radar_outlined,
+          selectedIcon: Icons.radar,
+          label: l10n.navLidar,
+        ),
+        _NavItem(
+          route: '/map',
+          icon: Icons.map_outlined,
+          selectedIcon: Icons.map,
+          label: l10n.navMap,
+        ),
+        _NavItem(
+          route: '/mapping',
+          icon: Icons.layers_outlined,
+          selectedIcon: Icons.layers,
+          label: l10n.navMapping,
+        ),
+        _NavItem(
+          route: '/waypoints',
+          icon: Icons.place_outlined,
+          selectedIcon: Icons.place,
+          label: l10n.navWaypoints,
+        ),
+        _NavItem(
+          route: '/monitoring',
+          icon: Icons.monitor_heart_outlined,
+          selectedIcon: Icons.monitor_heart,
+          label: l10n.navMonitoring,
+        ),
+        _NavItem(
+          route: '/params',
+          icon: Icons.tune,
+          selectedIcon: Icons.tune,
+          label: l10n.navParams,
+        ),
+        _NavItem(
+          route: '/logs',
+          icon: Icons.history,
+          selectedIcon: Icons.history_edu,
+          label: l10n.navLogs,
+        ),
+        _NavItem(
+          route: '/fleet',
+          icon: Icons.hub_outlined,
+          selectedIcon: Icons.hub,
+          label: l10n.navFleet,
+        ),
+        _NavItem(
+          route: '/settings',
+          icon: Icons.settings_outlined,
+          selectedIcon: Icons.settings,
+          label: l10n.navSettings,
+        ),
+      ];
 
   @override
   void didChangeDependencies() {
@@ -90,18 +149,20 @@ class _MainShellState extends ConsumerState<MainShell> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final destinations = _navItems(l10n);
     final location = GoRouterState.of(context).uri.path;
-    final selectedIndex = _indexForRoute(location);
+    final selectedIndex = _indexForRoute(location, destinations);
     final client = ref.watch(activeRosClientProvider);
     final width = MediaQuery.sizeOf(context).width;
     final isWide = width >= 900;
     final isExtended = width >= 1200;
     final scheme = Theme.of(context).colorScheme;
-    final safeIndex = selectedIndex.clamp(0, _destinations.length - 1);
+    final safeIndex = selectedIndex.clamp(0, destinations.length - 1);
 
     final body = Row(
       children: [
-        if (isWide) _buildRail(context, safeIndex, isExtended),
+        if (isWide) _buildRail(context, safeIndex, isExtended, destinations),
         if (isWide)
           VerticalDivider(
             width: 1,
@@ -109,11 +170,23 @@ class _MainShellState extends ConsumerState<MainShell> {
             color: scheme.outlineVariant.withValues(alpha: 0.5),
           ),
         Expanded(
-          child: Container(
+          child: DecoratedBox(
             decoration: BoxDecoration(
               color: scheme.surfaceContainerLowest,
+              borderRadius: isWide
+                  ? const BorderRadius.only(
+                      topLeft: Radius.circular(AppTheme.radiusLg),
+                    )
+                  : BorderRadius.zero,
             ),
-            child: widget.child,
+            child: ClipRRect(
+              borderRadius: isWide
+                  ? const BorderRadius.only(
+                      topLeft: Radius.circular(AppTheme.radiusLg),
+                    )
+                  : BorderRadius.zero,
+              child: widget.child,
+            ),
           ),
         ),
       ],
@@ -121,7 +194,7 @@ class _MainShellState extends ConsumerState<MainShell> {
 
     return Scaffold(
       key: _scaffoldKey,
-      drawer: isWide ? null : _buildDrawer(context, location),
+      drawer: isWide ? null : _buildDrawer(context, location, destinations),
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(60),
         child: _GlassAppBar(
@@ -132,7 +205,8 @@ class _MainShellState extends ConsumerState<MainShell> {
         ),
       ),
       body: body,
-      floatingActionButton: client == null ? null : _buildEstopFab(scheme),
+      floatingActionButton:
+          client == null ? null : _buildEstopFab(context, scheme),
       bottomNavigationBar: isWide
           ? null
           : NavigationBar(
@@ -146,23 +220,24 @@ class _MainShellState extends ConsumerState<MainShell> {
                 for (final route in _mobileBarRoutes)
                   NavigationDestination(
                     icon: Icon(
-                        _destinations.firstWhere((d) => d.route == route).icon),
-                    selectedIcon: Icon(_destinations
+                        destinations.firstWhere((d) => d.route == route).icon),
+                    selectedIcon: Icon(destinations
                         .firstWhere((d) => d.route == route)
                         .selectedIcon),
                     label:
-                        _destinations.firstWhere((d) => d.route == route).label,
+                        destinations.firstWhere((d) => d.route == route).label,
                   ),
               ],
             ),
     );
   }
 
-  Widget _buildEstopFab(ColorScheme scheme) {
+  Widget _buildEstopFab(BuildContext context, ColorScheme scheme) {
     final engaged = _estopEngaged;
+    final l10n = AppLocalizations.of(context);
     return Container(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
         boxShadow: [
           BoxShadow(
             color: (engaged ? scheme.error : scheme.error)
@@ -175,7 +250,7 @@ class _MainShellState extends ConsumerState<MainShell> {
       child: DecoratedBox(
         decoration: BoxDecoration(
           gradient: AppTheme.dangerGradient(engaged ? 1 : 0.9),
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
         ),
         child: FloatingActionButton.extended(
           onPressed: _toggleEstop,
@@ -189,7 +264,7 @@ class _MainShellState extends ConsumerState<MainShell> {
             color: Colors.white,
           ),
           label: Text(
-            engaged ? 'E-STOP ON' : 'E-STOP',
+            engaged ? l10n.estopFabOn : l10n.estopFab,
             style: const TextStyle(
               fontWeight: FontWeight.w800,
               letterSpacing: 0.6,
@@ -201,8 +276,14 @@ class _MainShellState extends ConsumerState<MainShell> {
     );
   }
 
-  Widget _buildRail(BuildContext context, int safeIndex, bool extended) {
+  Widget _buildRail(
+    BuildContext context,
+    int safeIndex,
+    bool extended,
+    List<_NavItem> destinations,
+  ) {
     final scheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
     return SizedBox(
       width: extended ? 236 : 86,
       child: Column(
@@ -228,7 +309,7 @@ class _MainShellState extends ConsumerState<MainShell> {
                               ?.copyWith(fontWeight: FontWeight.w800),
                         ),
                         Text(
-                          'Control suite',
+                          l10n.shellBrandSubtitle,
                           style: Theme.of(context)
                               .textTheme
                               .bodySmall
@@ -249,7 +330,7 @@ class _MainShellState extends ConsumerState<MainShell> {
             child: NavigationRail(
               extended: extended,
               selectedIndex: safeIndex,
-              onDestinationSelected: (i) => context.go(_destinations[i].route),
+              onDestinationSelected: (i) => context.go(destinations[i].route),
               labelType: extended
                   ? NavigationRailLabelType.none
                   : NavigationRailLabelType.all,
@@ -257,7 +338,7 @@ class _MainShellState extends ConsumerState<MainShell> {
               minExtendedWidth: 236,
               backgroundColor: Colors.transparent,
               destinations: [
-                for (final d in _destinations)
+                for (final d in destinations)
                   NavigationRailDestination(
                     icon: Icon(d.icon),
                     selectedIcon: Icon(d.selectedIcon),
@@ -271,9 +352,19 @@ class _MainShellState extends ConsumerState<MainShell> {
     );
   }
 
-  Drawer _buildDrawer(BuildContext context, String location) {
+  Drawer _buildDrawer(
+    BuildContext context,
+    String location,
+    List<_NavItem> destinations,
+  ) {
     final scheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
     return Drawer(
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.horizontal(
+          right: Radius.circular(AppTheme.radiusLg),
+        ),
+      ),
       child: SafeArea(
         child: Column(
           children: [
@@ -296,7 +387,7 @@ class _MainShellState extends ConsumerState<MainShell> {
                               ?.copyWith(fontWeight: FontWeight.w800),
                         ),
                         Text(
-                          'Điều khiển & giám sát',
+                          l10n.shellDrawerSubtitle,
                           style: Theme.of(context)
                               .textTheme
                               .bodySmall
@@ -316,17 +407,17 @@ class _MainShellState extends ConsumerState<MainShell> {
               child: ListView(
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 children: [
-                  for (var i = 0; i < _destinations.length; i++)
+                  for (var i = 0; i < destinations.length; i++)
                     ListTile(
                       leading: Icon(
-                        location.startsWith(_destinations[i].route)
-                            ? _destinations[i].selectedIcon
-                            : _destinations[i].icon,
+                        location.startsWith(destinations[i].route)
+                            ? destinations[i].selectedIcon
+                            : destinations[i].icon,
                       ),
-                      title: Text(_destinations[i].label),
-                      selected: location.startsWith(_destinations[i].route),
+                      title: Text(destinations[i].label),
+                      selected: location.startsWith(destinations[i].route),
                       onTap: () {
-                        context.go(_destinations[i].route);
+                        context.go(destinations[i].route);
                         Navigator.of(context).pop();
                       },
                     ),
@@ -348,13 +439,14 @@ class _GlassAppBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final scheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
     return AppBar(
       automaticallyImplyLeading: false,
       toolbarHeight: 60,
       leading: onMenu == null
           ? null
           : IconButton(
-              tooltip: 'Menu',
+              tooltip: l10n.shellMenuTooltip,
               icon: const Icon(Icons.menu_rounded),
               onPressed: onMenu,
             ),
@@ -374,7 +466,7 @@ class _GlassAppBar extends ConsumerWidget {
                 r.height,
               )),
               child: Text(
-                client?.profile.name ?? 'IOP-AMR Control',
+                client?.profile.name ?? l10n.appTitle,
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context)
                     .textTheme
@@ -388,7 +480,7 @@ class _GlassAppBar extends ConsumerWidget {
       actions: [
         const _ConnectionStatusChip(),
         Tooltip(
-          message: 'Đổi robot',
+          message: l10n.shellSwapRobotTooltip,
           child: IconButton.filledTonal(
             onPressed: () => context.go('/connection'),
             icon: const Icon(Icons.swap_horiz_rounded),
@@ -424,6 +516,7 @@ class _ConnectionStatusChip extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final client = ref.watch(activeRosClientProvider);
     final scheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
 
     late final Color color;
     late final String label;
@@ -431,7 +524,7 @@ class _ConnectionStatusChip extends ConsumerWidget {
 
     if (client == null) {
       color = scheme.outline;
-      label = 'Chưa kết nối';
+      label = l10n.statusNotConnected;
       pulsing = false;
     } else {
       final statusAsync = ref.watch(activeRosStatusProvider);
@@ -439,19 +532,19 @@ class _ConnectionStatusChip extends ConsumerWidget {
       switch (s) {
         case RosConnectionStatus.connected:
           color = AppTheme.brandSuccess;
-          label = 'Online';
+          label = l10n.statusOnline;
           pulsing = true;
         case RosConnectionStatus.connecting:
           color = AppTheme.brandWarning;
-          label = 'Đang nối…';
+          label = l10n.statusConnecting;
           pulsing = true;
         case RosConnectionStatus.error:
           color = scheme.error;
-          label = 'Lỗi';
+          label = l10n.statusError;
           pulsing = false;
         case RosConnectionStatus.disconnected:
           color = scheme.outline;
-          label = 'Offline';
+          label = l10n.statusOffline;
           pulsing = false;
       }
     }

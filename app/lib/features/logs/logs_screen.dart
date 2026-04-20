@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/ros/ros_client.dart';
 import '../../core/ros/topics.dart';
+import '../../l10n/app_localizations.dart';
 
 class LogsScreen extends ConsumerStatefulWidget {
   const LogsScreen({super.key});
@@ -62,8 +63,9 @@ class _LogsScreenState extends ConsumerState<LogsScreen> {
 
   Future<void> _call(String action, {bool silent = false}) async {
     final client = ref.read(activeRosClientProvider);
+    final l10n = AppLocalizations.of(context);
     if (client == null) {
-      _toast('Chưa kết nối robot');
+      _toast(l10n.logsNotConnected);
       return;
     }
     setState(() => _busy = true);
@@ -96,10 +98,11 @@ class _LogsScreenState extends ConsumerState<LogsScreen> {
         if (bags != null) _bags = bags;
       });
       if (!silent) {
-        _toast('Bag $action: ${res?['message'] ?? "sent"}');
+        _toast(l10n.logsBagAction(
+            action, res?['message']?.toString() ?? 'sent'));
       }
     } catch (e) {
-      if (mounted) _toast('Lỗi $action: $e');
+      if (mounted) _toast(l10n.logsErrorAction(action, e.toString()));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -119,6 +122,7 @@ class _LogsScreenState extends ConsumerState<LogsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -128,7 +132,7 @@ class _LogsScreenState extends ConsumerState<LogsScreen> {
             children: [
               const Icon(Icons.history),
               const SizedBox(width: 8),
-              Text('Rosbag recorder',
+              Text(l10n.logsTitle,
                   style: Theme.of(context).textTheme.headlineSmall),
               const Spacer(),
               if (_recording)
@@ -160,17 +164,17 @@ class _LogsScreenState extends ConsumerState<LogsScreen> {
           TextField(
             controller: _bagName,
             enabled: !_recording,
-            decoration: const InputDecoration(
-                labelText: 'Bag name',
-                prefixIcon: Icon(Icons.drive_file_rename_outline)),
+            decoration: InputDecoration(
+                labelText: l10n.logsBagName,
+                prefixIcon: const Icon(Icons.drive_file_rename_outline)),
           ),
           const SizedBox(height: 8),
           TextField(
             controller: _topics,
             enabled: !_recording,
-            decoration: const InputDecoration(
-              labelText: 'Topics (ngăn cách bằng dấu phẩy)',
-              prefixIcon: Icon(Icons.topic_outlined),
+            decoration: InputDecoration(
+              labelText: l10n.logsTopicsComma,
+              prefixIcon: const Icon(Icons.topic_outlined),
             ),
             maxLines: 2,
           ),
@@ -182,27 +186,27 @@ class _LogsScreenState extends ConsumerState<LogsScreen> {
               FilledButton.icon(
                 onPressed: (_recording || _busy) ? null : () => _call('start'),
                 icon: const Icon(Icons.fiber_manual_record),
-                label: const Text('Start'),
+                label: Text(l10n.logsStart),
                 style: FilledButton.styleFrom(backgroundColor: Colors.red),
               ),
               FilledButton.tonalIcon(
                 onPressed: (_recording && !_busy) ? () => _call('stop') : null,
                 icon: const Icon(Icons.stop),
-                label: const Text('Stop'),
+                label: Text(l10n.logsStop),
               ),
               OutlinedButton.icon(
                 onPressed: _busy ? null : () => _call('list'),
                 icon: const Icon(Icons.refresh),
-                label: const Text('Refresh list'),
+                label: Text(l10n.logsRefreshList),
               ),
             ],
           ),
           const Divider(height: 32),
           Row(children: [
-            Text('Bags có sẵn',
+            Text(l10n.logsAvailableBags,
                 style: Theme.of(context).textTheme.titleMedium),
             const Spacer(),
-            Text('${_bags.length} bag',
+            Text(l10n.logsBagCount(_bags.length),
                 style: Theme.of(context).textTheme.bodySmall),
           ]),
           const SizedBox(height: 8),
@@ -216,8 +220,7 @@ class _LogsScreenState extends ConsumerState<LogsScreen> {
                           size: 48,
                           color: Theme.of(context).colorScheme.outline),
                       const SizedBox(height: 8),
-                      const Text(
-                          'Chưa có bag nào. Bấm "Refresh list" hoặc ghi bag mới.'),
+                      Text(l10n.logsEmpty),
                     ],
                   ))
                 : Card(

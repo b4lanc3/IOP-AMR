@@ -5,19 +5,22 @@ import 'package:go_router/go_router.dart';
 import '../../core/providers/connection_provider.dart';
 import '../../core/ros/ros_client.dart';
 import '../../core/storage/models/robot_profile.dart';
+import '../../l10n/app_localizations.dart';
 
 class FleetScreen extends ConsumerWidget {
   const FleetScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final robotsAsync = ref.watch(robotProfilesProvider);
     final active = ref.watch(activeRosClientProvider);
     final statusAsync = ref.watch(activeRosStatusProvider);
 
     return robotsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('Lỗi load robots: $e')),
+      error: (e, _) =>
+          Center(child: Text(l10n.fleetError(e.toString()))),
       data: (robots) {
         if (robots.isEmpty) {
           return Center(
@@ -27,12 +30,12 @@ class FleetScreen extends ConsumerWidget {
                 Icon(Icons.hub_outlined,
                     size: 64, color: Theme.of(context).colorScheme.outline),
                 const SizedBox(height: 12),
-                const Text('Chưa có robot nào trong fleet.'),
+                Text(l10n.fleetEmpty),
                 const SizedBox(height: 8),
                 FilledButton.tonalIcon(
                   onPressed: () => context.go('/connection'),
                   icon: const Icon(Icons.add),
-                  label: const Text('Thêm robot'),
+                  label: Text(l10n.fleetAddRobot),
                 ),
               ],
             ),
@@ -54,6 +57,7 @@ class FleetScreen extends ConsumerWidget {
                 ? (statusAsync.value ?? active!.currentStatus)
                 : RosConnectionStatus.disconnected;
             return _RobotCard(
+              l10n: l10n,
               profile: r,
               isActive: isActive,
               status: status,
@@ -73,6 +77,7 @@ class FleetScreen extends ConsumerWidget {
 
 class _RobotCard extends StatelessWidget {
   const _RobotCard({
+    required this.l10n,
     required this.profile,
     required this.isActive,
     required this.status,
@@ -80,6 +85,7 @@ class _RobotCard extends StatelessWidget {
     required this.onOpenConnection,
   });
 
+  final AppLocalizations l10n;
   final RobotProfile profile;
   final bool isActive;
   final RosConnectionStatus status;
@@ -89,10 +95,10 @@ class _RobotCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (color, label) = switch (status) {
-      RosConnectionStatus.connected => (Colors.green, 'Online'),
-      RosConnectionStatus.connecting => (Colors.orange, 'Connecting…'),
-      RosConnectionStatus.error => (Colors.red, 'Error'),
-      RosConnectionStatus.disconnected => (Colors.grey, 'Offline'),
+      RosConnectionStatus.connected => (Colors.green, l10n.statusOnline),
+      RosConnectionStatus.connecting => (Colors.orange, l10n.statusConnecting),
+      RosConnectionStatus.error => (Colors.red, l10n.statusError),
+      RosConnectionStatus.disconnected => (Colors.grey, l10n.statusOffline),
     };
     return Card(
       elevation: isActive ? 4 : 1,
@@ -138,7 +144,7 @@ class _RobotCard extends StatelessWidget {
                             CircleAvatar(
                                 backgroundColor: color, radius: 4),
                             const SizedBox(width: 6),
-                            Text(isActive ? label : 'Standby',
+                            Text(isActive ? label : l10n.fleetStandby,
                                 style:
                                     Theme.of(context).textTheme.bodySmall),
                           ],
@@ -167,12 +173,14 @@ class _RobotCard extends StatelessWidget {
                       icon: Icon(
                           isActive ? Icons.check : Icons.swap_horiz),
                       label: Text(
-                          isActive ? 'Đang active' : 'Chuyển sang robot'),
+                          isActive
+                              ? l10n.fleetCurrentActive
+                              : l10n.fleetSwitchToRobot),
                     ),
                   ),
                   const SizedBox(width: 8),
                   IconButton(
-                    tooltip: 'Mở connection screen',
+                    tooltip: l10n.fleetOpenConnectionTooltip,
                     onPressed: onOpenConnection,
                     icon: const Icon(Icons.settings_ethernet),
                   ),

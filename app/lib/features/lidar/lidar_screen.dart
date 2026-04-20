@@ -7,6 +7,7 @@ import '../../core/providers/settings_provider.dart';
 import '../../core/ros/msg_types.dart';
 import '../../core/ros/ros_client.dart';
 import '../../core/ros/topics.dart';
+import '../../l10n/app_localizations.dart';
 
 class LidarScreen extends ConsumerStatefulWidget {
   const LidarScreen({super.key});
@@ -53,9 +54,11 @@ class _LidarScreenState extends ConsumerState<LidarScreen> {
   Widget build(BuildContext context) {
     final showGrid =
         ref.watch(appSettingsProvider.select((s) => s.showGridOnLidar));
+    final l10n = AppLocalizations.of(context);
     return Column(
       children: [
         _LidarToolbar(
+          l10n: l10n,
           scale: _scale,
           rangeMin: _rangeMin,
           rangeMax: _rangeMax,
@@ -90,6 +93,7 @@ class _LidarScreenState extends ConsumerState<LidarScreen> {
 
 class _LidarToolbar extends StatelessWidget {
   const _LidarToolbar({
+    required this.l10n,
     required this.scale,
     required this.rangeMin,
     required this.rangeMax,
@@ -99,6 +103,7 @@ class _LidarToolbar extends StatelessWidget {
     required this.onReset,
   });
 
+  final AppLocalizations l10n;
   final double scale;
   final double rangeMin;
   final double rangeMax;
@@ -119,13 +124,13 @@ class _LidarToolbar extends StatelessWidget {
               value: scale,
               min: 10,
               max: 200,
-              label: '${scale.toStringAsFixed(0)} px/m',
+              label: l10n.lidarScaleLabel(scale.toStringAsFixed(0)),
               onChanged: onScale,
             ),
           ),
-          Text('${scale.toStringAsFixed(0)} px/m'),
+          Text(l10n.lidarScaleLabel(scale.toStringAsFixed(0))),
           const SizedBox(width: 16),
-          const Text('Range'),
+          Text(l10n.lidarRange),
           SizedBox(
             width: 240,
             child: RangeSlider(
@@ -144,7 +149,7 @@ class _LidarToolbar extends StatelessWidget {
             ),
           ),
           IconButton(
-            tooltip: 'Reset view',
+            tooltip: l10n.lidarResetView,
             onPressed: onReset,
             icon: const Icon(Icons.center_focus_strong),
           ),

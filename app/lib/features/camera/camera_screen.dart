@@ -3,6 +3,7 @@ import 'package:flutter_mjpeg/flutter_mjpeg.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/ros/ros_client.dart';
+import '../../l10n/app_localizations.dart';
 
 class CameraScreen extends ConsumerStatefulWidget {
   const CameraScreen({super.key});
@@ -29,8 +30,9 @@ class _CameraScreenState extends ConsumerState<CameraScreen> {
   Widget build(BuildContext context) {
     final client = ref.watch(activeRosClientProvider);
     final profile = client?.profile;
+    final l10n = AppLocalizations.of(context);
     if (profile == null) {
-      return const Center(child: Text('Chưa chọn robot'));
+      return Center(child: Text(l10n.cameraNoRobot));
     }
     return DefaultTabController(
       length: 2,
@@ -44,7 +46,7 @@ class _CameraScreenState extends ConsumerState<CameraScreen> {
                   child: TextField(
                     controller: _rgbTopic,
                     decoration:
-                        const InputDecoration(labelText: 'RGB topic'),
+                        InputDecoration(labelText: l10n.cameraRgbTopic),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -52,12 +54,12 @@ class _CameraScreenState extends ConsumerState<CameraScreen> {
                   child: TextField(
                     controller: _depthTopic,
                     decoration:
-                        const InputDecoration(labelText: 'Depth topic'),
+                        InputDecoration(labelText: l10n.cameraDepthTopic),
                   ),
                 ),
                 const SizedBox(width: 12),
                 IconButton(
-                  tooltip: 'Reload cả hai stream',
+                  tooltip: l10n.cameraReloadTooltip,
                   onPressed: () => setState(() {
                     _rgbEpoch++;
                     _depthEpoch++;
@@ -67,8 +69,11 @@ class _CameraScreenState extends ConsumerState<CameraScreen> {
               ],
             ),
           ),
-          const TabBar(
-            tabs: [Tab(text: 'RGB'), Tab(text: 'Depth')],
+          TabBar(
+            tabs: [
+              Tab(text: l10n.cameraTabRgb),
+              Tab(text: l10n.cameraTabDepth),
+            ],
           ),
           Expanded(
             child: TabBarView(
@@ -77,11 +82,13 @@ class _CameraScreenState extends ConsumerState<CameraScreen> {
                   key: ValueKey('rgb-$_rgbEpoch'),
                   url: profile.videoStreamUrl(_rgbTopic.text.trim()),
                   onRetry: () => setState(() => _rgbEpoch++),
+                  l10n: l10n,
                 ),
                 _MjpegView(
                   key: ValueKey('depth-$_depthEpoch'),
                   url: profile.videoStreamUrl(_depthTopic.text.trim()),
                   onRetry: () => setState(() => _depthEpoch++),
+                  l10n: l10n,
                 ),
               ],
             ),
@@ -93,9 +100,15 @@ class _CameraScreenState extends ConsumerState<CameraScreen> {
 }
 
 class _MjpegView extends StatelessWidget {
-  const _MjpegView({super.key, required this.url, required this.onRetry});
+  const _MjpegView({
+    super.key,
+    required this.url,
+    required this.onRetry,
+    required this.l10n,
+  });
   final String url;
   final VoidCallback onRetry;
+  final AppLocalizations l10n;
 
   @override
   Widget build(BuildContext context) {
@@ -116,14 +129,14 @@ class _MjpegView extends StatelessWidget {
                       const Icon(Icons.error_outline,
                           color: Colors.white70, size: 48),
                       const SizedBox(height: 8),
-                      Text('Không lấy được stream:\n$err',
+                      Text(l10n.cameraStreamError(err.toString()),
                           textAlign: TextAlign.center,
                           style: const TextStyle(color: Colors.white70)),
                       const SizedBox(height: 12),
                       FilledButton.icon(
                         onPressed: onRetry,
                         icon: const Icon(Icons.refresh),
-                        label: const Text('Thử lại'),
+                        label: Text(l10n.cameraRetry),
                       ),
                     ],
                   ),

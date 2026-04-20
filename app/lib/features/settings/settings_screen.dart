@@ -5,8 +5,10 @@ import 'package:uuid/uuid.dart';
 
 import '../../core/providers/settings_provider.dart';
 import '../../core/storage/hive_boxes.dart';
+import '../../core/storage/models/app_language.dart';
 import '../../core/storage/models/app_settings.dart';
 import '../../core/storage/models/gamepad_profile.dart';
+import '../../l10n/app_localizations.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -18,6 +20,7 @@ class SettingsScreen extends ConsumerStatefulWidget {
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final settings = ref.watch(appSettingsProvider);
     final ctrl = ref.read(appSettingsProvider.notifier);
     final profiles = HiveBoxes.gamepadProfiles.values.toList();
@@ -32,20 +35,26 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       padding: const EdgeInsets.all(16),
       children: [
         _Section(
-          title: 'Giao diện',
+          title: l10n.settingsSectionAppearance,
           children: [
             ListTile(
               leading: const Icon(Icons.brightness_6_outlined),
-              title: const Text('Chủ đề'),
+              title: Text(l10n.settingsTheme),
               trailing: DropdownButton<ThemeMode>(
                 value: settings.themeMode,
-                items: const [
+                items: [
                   DropdownMenuItem(
-                      value: ThemeMode.system, child: Text('Theo hệ thống')),
+                    value: ThemeMode.system,
+                    child: Text(l10n.settingsThemeSystem),
+                  ),
                   DropdownMenuItem(
-                      value: ThemeMode.light, child: Text('Sáng')),
+                    value: ThemeMode.light,
+                    child: Text(l10n.settingsThemeLight),
+                  ),
                   DropdownMenuItem(
-                      value: ThemeMode.dark, child: Text('Tối')),
+                    value: ThemeMode.dark,
+                    child: Text(l10n.settingsThemeDark),
+                  ),
                 ],
                 onChanged: (v) =>
                     v == null ? null : ctrl.update((s) => s.copyWith(themeMode: v)),
@@ -53,16 +62,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
             ListTile(
               leading: const Icon(Icons.straighten),
-              title: const Text('Đơn vị hiển thị'),
+              title: Text(l10n.settingsUnits),
               trailing: DropdownButton<DisplayUnits>(
                 value: settings.units,
-                items: const [
+                items: [
                   DropdownMenuItem(
-                      value: DisplayUnits.metric,
-                      child: Text('Metric (m, m/s)')),
+                    value: DisplayUnits.metric,
+                    child: Text(l10n.settingsUnitsMetric),
+                  ),
                   DropdownMenuItem(
-                      value: DisplayUnits.imperial,
-                      child: Text('Imperial (ft, ft/s)')),
+                    value: DisplayUnits.imperial,
+                    child: Text(l10n.settingsUnitsImperial),
+                  ),
                 ],
                 onChanged: (v) =>
                     v == null ? null : ctrl.update((s) => s.copyWith(units: v)),
@@ -70,7 +81,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
             SwitchListTile(
               secondary: const Icon(Icons.grid_on),
-              title: const Text('Hiện lưới trên LiDAR'),
+              title: Text(l10n.settingsLidarGrid),
               value: settings.showGridOnLidar,
               onChanged: (v) =>
                   ctrl.update((s) => s.copyWith(showGridOnLidar: v)),
@@ -78,13 +89,37 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ],
         ),
         _Section(
-          title: 'Kết nối',
+          title: l10n.settingsSectionLanguage,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.language_rounded),
+              title: Text(l10n.settingsLanguageLabel),
+              trailing: DropdownButton<AppLanguage>(
+                value: settings.language,
+                items: [
+                  DropdownMenuItem(
+                    value: AppLanguage.vietnamese,
+                    child: Text(l10n.settingsLanguageVietnamese),
+                  ),
+                  DropdownMenuItem(
+                    value: AppLanguage.english,
+                    child: Text(l10n.settingsLanguageEnglish),
+                  ),
+                ],
+                onChanged: (v) => v == null
+                    ? null
+                    : ctrl.update((s) => s.copyWith(language: v)),
+              ),
+            ),
+          ],
+        ),
+        _Section(
+          title: l10n.settingsSectionConnection,
           children: [
             SwitchListTile(
               secondary: const Icon(Icons.refresh),
-              title: const Text('Auto-reconnect'),
-              subtitle: const Text(
-                  'Tự kết nối lại nếu rosbridge rớt, exponential backoff'),
+              title: Text(l10n.settingsAutoReconnect),
+              subtitle: Text(l10n.settingsAutoReconnectSubtitle),
               value: settings.autoReconnect,
               onChanged: (v) =>
                   ctrl.update((s) => s.copyWith(autoReconnect: v)),
@@ -92,10 +127,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ],
         ),
         _Section(
-          title: 'Điều khiển',
+          title: l10n.settingsSectionControl,
           children: [
             _SliderTile(
-              label: 'Tốc độ tuyến tính tối đa',
+              label: l10n.settingsMaxLinear,
               unit: 'm/s',
               min: 0.05,
               max: 2.0,
@@ -104,7 +139,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ctrl.update((s) => s.copyWith(defaultMaxLinear: v)),
             ),
             _SliderTile(
-              label: 'Tốc độ quay tối đa',
+              label: l10n.settingsMaxAngular,
               unit: 'rad/s',
               min: 0.1,
               max: 3.5,
@@ -113,7 +148,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ctrl.update((s) => s.copyWith(defaultMaxAngular: v)),
             ),
             _SliderTile(
-              label: 'Tần số publish /cmd_vel',
+              label: l10n.settingsCmdVelHz,
               unit: 'Hz',
               min: 5,
               max: 40,
@@ -125,37 +160,47 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ],
         ),
         _Section(
-          title: 'Gamepad',
+          title: l10n.settingsSectionGamepad,
           trailing: IconButton(
-            tooltip: 'Tạo profile mới',
+            tooltip: l10n.settingsNewProfileTooltip,
             icon: const Icon(Icons.add),
             onPressed: _createProfile,
           ),
           children: [
-            for (final p in profiles)
-              RadioListTile<String>(
-                value: p.id,
-                groupValue: settings.activeGamepadProfileId,
+            if (profiles.isNotEmpty)
+              RadioGroup<String>(
+                groupValue: settings.activeGamepadProfileId ??
+                    profiles.first.id,
                 onChanged: (v) => ctrl.update(
-                    (s) => s.copyWith(activeGamepadProfileId: v)),
-                title: Text(p.name),
-                subtitle: Text(
-                  'lin=${p.linearAxisKey}${p.invertLinear ? "⁻" : ""}  '
-                  'ang=${p.angularAxisKey}${p.invertAngular ? "⁻" : ""}  '
-                  'dz=${p.deadzone.toStringAsFixed(2)}',
+                  (s) => s.copyWith(activeGamepadProfileId: v),
                 ),
-                secondary: Wrap(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    IconButton(
-                      tooltip: 'Sửa',
-                      icon: const Icon(Icons.edit_outlined),
-                      onPressed: () => _editProfile(p),
-                    ),
-                    if (profiles.length > 1)
-                      IconButton(
-                        tooltip: 'Xoá',
-                        icon: const Icon(Icons.delete_outline),
-                        onPressed: () => _deleteProfile(p),
+                    for (final p in profiles)
+                      RadioListTile<String>(
+                        value: p.id,
+                        title: Text(p.name),
+                        subtitle: Text(
+                          'lin=${p.linearAxisKey}${p.invertLinear ? "⁻" : ""}  '
+                          'ang=${p.angularAxisKey}${p.invertAngular ? "⁻" : ""}  '
+                          'dz=${p.deadzone.toStringAsFixed(2)}',
+                        ),
+                        secondary: Wrap(
+                          children: [
+                            IconButton(
+                              tooltip: l10n.settingsEditTooltip,
+                              icon: const Icon(Icons.edit_outlined),
+                              onPressed: () => _editProfile(p),
+                            ),
+                            if (profiles.length > 1)
+                              IconButton(
+                                tooltip: l10n.settingsDeleteTooltip,
+                                icon: const Icon(Icons.delete_outline),
+                                onPressed: () => _deleteProfile(p),
+                              ),
+                          ],
+                        ),
                       ),
                   ],
                 ),
@@ -164,14 +209,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: Text(
-                  'Đang dùng: ${activeProfile.name}',
+                  l10n.settingsUsingProfile(activeProfile.name),
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ),
           ],
         ),
         _Section(
-          title: 'Ứng dụng',
+          title: l10n.settingsSectionApp,
           children: [
             FutureBuilder<PackageInfo>(
               future: PackageInfo.fromPlatform(),
@@ -179,10 +224,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 final info = snap.data;
                 return ListTile(
                   leading: const Icon(Icons.info_outline_rounded),
-                  title: const Text('Phiên bản'),
+                  title: Text(l10n.settingsVersion),
                   subtitle: Text(
                     info == null
-                        ? 'Đang tải…'
+                        ? l10n.settingsVersionLoading
                         : '${info.version} (${info.buildNumber}) · ${info.appName}',
                   ),
                 );
@@ -190,11 +235,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
             ListTile(
               leading: const Icon(Icons.download_outlined),
-              title: const Text('Cài đặt Windows'),
-              subtitle: const Text(
-                'Bản phát hành: chạy dart run msix:create trong thư mục app '
-                'để tạo file .msix, hoặc dùng ZIP thư mục Release (xem scripts/).',
-              ),
+              title: Text(l10n.settingsWindowsInstall),
+              subtitle: Text(l10n.settingsWindowsInstallSubtitle),
               isThreeLine: true,
             ),
           ],
@@ -212,18 +254,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Future<void> _deleteProfile(GamepadProfile p) async {
+    final l10n = AppLocalizations.of(context);
     final confirm = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Xoá profile?'),
-        content: Text('Xoá "${p.name}"? Không thể khôi phục.'),
+        title: Text(l10n.settingsDeleteProfileTitle),
+        content: Text(l10n.settingsDeleteProfileBody(p.name)),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Huỷ')),
+              child: Text(l10n.commonCancel)),
           FilledButton(
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('Xoá')),
+              child: Text(l10n.commonDelete)),
         ],
       ),
     );
@@ -376,6 +419,7 @@ class _GamepadProfileDialogState extends State<_GamepadProfileDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Dialog(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 520),
@@ -386,28 +430,28 @@ class _GamepadProfileDialogState extends State<_GamepadProfileDialog> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Sửa gamepad profile',
+                Text(l10n.gamepadEditTitle,
                     style: Theme.of(context).textTheme.titleLarge),
                 const SizedBox(height: 12),
                 TextField(
                   controller: _name,
-                  decoration: const InputDecoration(labelText: 'Tên profile'),
+                  decoration: InputDecoration(labelText: l10n.gamepadProfileName),
                 ),
                 const SizedBox(height: 12),
                 Row(children: [
                   Expanded(
                     child: TextField(
                       controller: _linKey,
-                      decoration: const InputDecoration(
-                          labelText: 'Linear axis key (ví dụ l.y)'),
+                      decoration: InputDecoration(
+                          labelText: l10n.gamepadLinearAxis),
                     ),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: TextField(
                       controller: _angKey,
-                      decoration: const InputDecoration(
-                          labelText: 'Angular axis key (ví dụ r.x)'),
+                      decoration: InputDecoration(
+                          labelText: l10n.gamepadAngularAxis),
                     ),
                   ),
                 ]),
@@ -416,7 +460,7 @@ class _GamepadProfileDialogState extends State<_GamepadProfileDialog> {
                   Expanded(
                     child: SwitchListTile(
                       contentPadding: EdgeInsets.zero,
-                      title: const Text('Invert linear'),
+                      title: Text(l10n.gamepadInvertLinear),
                       value: _invLin,
                       onChanged: (v) => setState(() => _invLin = v),
                     ),
@@ -424,21 +468,21 @@ class _GamepadProfileDialogState extends State<_GamepadProfileDialog> {
                   Expanded(
                     child: SwitchListTile(
                       contentPadding: EdgeInsets.zero,
-                      title: const Text('Invert angular'),
+                      title: Text(l10n.gamepadInvertAngular),
                       value: _invAng,
                       onChanged: (v) => setState(() => _invAng = v),
                     ),
                   ),
                 ]),
-                _slider('Linear scale', _linScale, 0.1, 2.0,
+                _slider(l10n.gamepadLinearScale, _linScale, 0.1, 2.0,
                     (v) => setState(() => _linScale = v)),
-                _slider('Angular scale', _angScale, 0.1, 3.5,
+                _slider(l10n.gamepadAngularScale, _angScale, 0.1, 3.5,
                     (v) => setState(() => _angScale = v)),
-                _slider('Deadzone', _deadzone, 0, 0.3,
+                _slider(l10n.gamepadDeadzone, _deadzone, 0, 0.3,
                     (v) => setState(() => _deadzone = v)),
                 const SizedBox(height: 8),
-                const Text('Map nút bấm',
-                    style: TextStyle(fontWeight: FontWeight.w600)),
+                Text(l10n.gamepadButtonMap,
+                    style: const TextStyle(fontWeight: FontWeight.w600)),
                 const SizedBox(height: 4),
                 for (final e in _buttons.entries)
                   Padding(
@@ -460,7 +504,7 @@ class _GamepadProfileDialogState extends State<_GamepadProfileDialog> {
                   children: [
                     TextButton(
                         onPressed: () => Navigator.pop(context),
-                        child: const Text('Huỷ')),
+                        child: Text(l10n.commonCancel)),
                     const SizedBox(width: 8),
                     FilledButton(
                         onPressed: () => Navigator.pop(
@@ -480,7 +524,7 @@ class _GamepadProfileDialogState extends State<_GamepadProfileDialog> {
                                 buttonActions: _buttons,
                               ),
                             ),
-                        child: const Text('Lưu')),
+                        child: Text(l10n.commonSave)),
                   ],
                 ),
               ],

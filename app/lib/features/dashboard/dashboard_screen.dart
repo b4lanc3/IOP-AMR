@@ -6,6 +6,7 @@ import '../../core/ros/ros_client.dart';
 import '../../core/ros/topics.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/ui_kit.dart';
+import '../../l10n/app_localizations.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -69,6 +70,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     _statsSub = client.subscribeRaw(
       topic: RosTopics.systemStats,
       type: RosTypes.systemStats,
+      throttleRateMs: 250,
+      queueLength: 1,
     );
     _statsSub!.stream.listen((m) {
       if (!mounted) return;
@@ -115,6 +118,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final statusAsync = ref.watch(activeRosStatusProvider);
     final status = statusAsync.value ?? client?.currentStatus;
     final connected = status == RosConnectionStatus.connected;
+    final l10n = AppLocalizations.of(context);
 
     return LayoutBuilder(
       builder: (context, c) {
@@ -132,20 +136,20 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                 child: _DashboardHero(
-                  robotName: client?.profile.name ?? 'Chưa chọn robot',
+                  robotName: client?.profile.name ?? l10n.dashboardNoRobot,
                   host: client?.profile.host ?? '—',
                   connected: connected,
                   battery: _battery,
+                  l10n: l10n,
                 ),
               ),
             ),
-            const SliverPadding(
-              padding: EdgeInsets.fromLTRB(16, 8, 16, 8),
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
               sliver: SliverToBoxAdapter(
                 child: SectionHeader(
-                  title: 'Trạng thái trực tiếp',
-                  subtitle:
-                      'Dữ liệu cập nhật theo topic rosbridge (pin, vận tốc, pose, CPU/GPU).',
+                  title: l10n.dashboardLiveStatus,
+                  subtitle: l10n.dashboardLiveStatusSubtitle,
                   icon: Icons.insights_rounded,
                 ),
               ),
@@ -158,10 +162,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 crossAxisSpacing: 14,
                 childAspectRatio: cross == 1 ? 1.8 : 1.45,
                 children: [
-                  _BatteryCard(battery: _battery),
-                  _VelocityCard(odom: _odom),
-                  _PoseCard(odom: _odom, amcl: _amclPose),
-                  _SystemCard(stats: _stats),
+                  _BatteryCard(battery: _battery, l10n: l10n),
+                  _VelocityCard(odom: _odom, l10n: l10n),
+                  _PoseCard(odom: _odom, amcl: _amclPose, l10n: l10n),
+                  _SystemCard(stats: _stats, l10n: l10n),
                 ],
               ),
             ),
@@ -179,12 +183,14 @@ class _DashboardHero extends StatelessWidget {
     required this.host,
     required this.connected,
     required this.battery,
+    required this.l10n,
   });
 
   final String robotName;
   final String host;
   final bool connected;
   final BatteryState? battery;
+  final AppLocalizations l10n;
 
   @override
   Widget build(BuildContext context) {
@@ -193,8 +199,8 @@ class _DashboardHero extends StatelessWidget {
     return HeroBanner(
       title: robotName,
       subtitle: connected
-          ? 'Đang trực tuyến · $host'
-          : 'Offline — kiểm tra rosbridge hoặc chọn robot khác',
+          ? l10n.dashboardOnlineHost(host)
+          : l10n.dashboardOfflineHint,
       icon: Icons.precision_manufacturing_rounded,
       chips: [
         _HeroChip(
@@ -204,13 +210,13 @@ class _DashboardHero extends StatelessWidget {
         ),
         _HeroChip(
           icon: connected ? Icons.cloud_done_rounded : Icons.cloud_off_rounded,
-          label: connected ? 'Online' : 'Offline',
+          label: connected ? l10n.statusOnline : l10n.statusOffline,
           color: connected ? AppTheme.brandSuccess : scheme.outline,
         ),
         if (pct != null)
           _HeroChip(
             icon: Icons.battery_charging_full_rounded,
-            label: '${pct.toStringAsFixed(0)}% pin',
+            label: l10n.dashboardBatteryPercent(pct.toStringAsFixed(0)),
             color: pct < 20
                 ? AppTheme.brandDanger
                 : pct < 50
@@ -260,8 +266,9 @@ class _HeroChip extends StatelessWidget {
 }
 
 class _BatteryCard extends StatelessWidget {
-  const _BatteryCard({required this.battery});
+  const _BatteryCard({required this.battery, required this.l10n});
   final BatteryState? battery;
+  final AppLocalizations l10n;
 
   @override
   Widget build(BuildContext context) {
@@ -274,14 +281,14 @@ class _BatteryCard extends StatelessWidget {
             : AppTheme.brandSuccess;
     return MetricCard(
       icon: Icons.battery_charging_full_rounded,
-      title: 'Battery',
+      title: l10n.dashboardBattery,
       value: b == null ? '—' : pct.toStringAsFixed(0),
       unit: b == null ? null : '%',
       subtitle: b == null
           ? '--.- V / --.- A'
           : '${b.voltage.toStringAsFixed(1)} V · '
               '${b.current.toStringAsFixed(2)} A'
-              '${b.charging ? "  ·  ⚡ charging" : ""}',
+              '${b.charging ? "  ·  ⚡ ${l10n.dashboardBatteryCharging}" : ""}',
       progress: b == null ? 0 : pct / 100,
       accent: accent,
     );
@@ -289,8 +296,9 @@ class _BatteryCard extends StatelessWidget {
 }
 
 class _VelocityCard extends StatelessWidget {
-  const _VelocityCard({required this.odom});
+  const _VelocityCard({required this.odom, required this.l10n});
   final Odometry? odom;
+  final AppLocalizations l10n;
 
   @override
   Widget build(BuildContext context) {
@@ -298,10 +306,10 @@ class _VelocityCard extends StatelessWidget {
     final ang = odom?.twist.angular.z ?? 0;
     return MetricCard(
       icon: Icons.speed_rounded,
-      title: 'Velocity',
+      title: l10n.dashboardVelocity,
       value: lin.toStringAsFixed(2),
       unit: 'm/s',
-      subtitle: 'ω: ${ang.toStringAsFixed(2)} rad/s',
+      subtitle: l10n.dashboardVelocityOmega(ang.toStringAsFixed(2)),
       progress: (lin.abs() / 1.5).clamp(0.0, 1.0),
       accent: AppTheme.brandAccent,
     );
@@ -309,9 +317,11 @@ class _VelocityCard extends StatelessWidget {
 }
 
 class _PoseCard extends StatelessWidget {
-  const _PoseCard({required this.odom, required this.amcl});
+  const _PoseCard(
+      {required this.odom, required this.amcl, required this.l10n});
   final Odometry? odom;
   final PoseStamped? amcl;
+  final AppLocalizations l10n;
 
   @override
   Widget build(BuildContext context) {
@@ -336,7 +346,7 @@ class _PoseCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 10),
                 Text(
-                  'POSE',
+                  l10n.dashboardPoseTitle.toUpperCase(),
                   style: Theme.of(context).textTheme.labelMedium?.copyWith(
                         color: scheme.onSurfaceVariant,
                         fontWeight: FontWeight.w600,
@@ -347,7 +357,7 @@ class _PoseCard extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             _PoseRow(
-              label: 'odom',
+              label: l10n.dashboardPoseOdom,
               x: p?.x,
               y: p?.y,
               yaw: yaw,
@@ -355,7 +365,7 @@ class _PoseCard extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             _PoseRow(
-              label: 'amcl (map)',
+              label: l10n.dashboardPoseAmcl,
               x: ap?.x,
               y: ap?.y,
               yaw: ayaw,
@@ -454,8 +464,9 @@ class _PoseField extends StatelessWidget {
 }
 
 class _SystemCard extends StatelessWidget {
-  const _SystemCard({required this.stats});
+  const _SystemCard({required this.stats, required this.l10n});
   final SystemStats? stats;
+  final AppLocalizations l10n;
 
   @override
   Widget build(BuildContext context) {
@@ -477,7 +488,7 @@ class _SystemCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 10),
                 Text(
-                  'JETSON',
+                  l10n.dashboardSystemTitle.toUpperCase(),
                   style: Theme.of(context).textTheme.labelMedium?.copyWith(
                         color: scheme.onSurfaceVariant,
                         fontWeight: FontWeight.w600,

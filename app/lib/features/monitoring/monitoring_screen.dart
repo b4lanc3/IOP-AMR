@@ -21,33 +21,47 @@ class _MonitoringScreenState extends ConsumerState<MonitoringScreen> {
   final _ram = <FlSpot>[];
   int _t = 0;
   static const _max = 60;
+  RosConnectionStatus _lastStatus = RosConnectionStatus.disconnected;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _wire());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final client = ref.read(activeRosClientProvider);
+      if (client != null &&
+          client.currentStatus == RosConnectionStatus.connected) {
+        _wire();
+      }
+    });
   }
 
   void _wire() {
     final client = ref.read(activeRosClientProvider);
     if (client == null || !client.isConnected) return;
+    _sub?.cancel();
     _sub = client.subscribeRaw(
       topic: RosTopics.systemStats,
       type: RosTypes.systemStats,
-    )..stream.listen((m) {
-        final s = SystemStats.fromJson(m);
-        final t = (_t++).toDouble();
-        setState(() {
-          _cpu.add(FlSpot(t, s.cpuPercent));
-          _gpu.add(FlSpot(t, s.gpuPercent));
-          _cpuTemp.add(FlSpot(t, s.cpuTempC));
-          _ram.add(FlSpot(t, (s.ramUsedMb / s.ramTotalMb) * 100));
-          _trim(_cpu);
-          _trim(_gpu);
-          _trim(_cpuTemp);
-          _trim(_ram);
-        });
+      throttleRateMs: 250,
+      queueLength: 1,
+    );
+    _sub!.stream.listen((m) {
+      if (!mounted) return;
+      final s = SystemStats.fromJson(m);
+      final t = (_t++).toDouble();
+      setState(() {
+        _cpu.add(FlSpot(t, s.cpuPercent));
+        _gpu.add(FlSpot(t, s.gpuPercent));
+        _cpuTemp.add(FlSpot(t, s.cpuTempC));
+        final ramPct =
+            s.ramTotalMb > 0 ? (s.ramUsedMb / s.ramTotalMb) * 100 : 0.0;
+        _ram.add(FlSpot(t, ramPct));
+        _trim(_cpu);
+        _trim(_gpu);
+        _trim(_cpuTemp);
+        _trim(_ram);
       });
+    });
   }
 
   void _trim(List<FlSpot> data) {
@@ -62,6 +76,20 @@ class _MonitoringScreenState extends ConsumerState<MonitoringScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<AsyncValue<RosConnectionStatus>>(activeRosStatusProvider,
+        (prev, next) {
+      final s = next.value ?? RosConnectionStatus.disconnected;
+      if (s != _lastStatus) {
+        _lastStatus = s;
+        if (s == RosConnectionStatus.connected) {
+          _wire();
+        } else {
+          _sub?.cancel();
+          _sub = null;
+        }
+      }
+    });
+
     return GridView.count(
       padding: const EdgeInsets.all(16),
       crossAxisCount: 2,
