@@ -1,0 +1,5 @@
+# Bật/tắt stack joy/Flydigi trên robot (ros2 launch) — gọi từ app qua rosbridge.
+bool enable
+---
+bool success
+string message

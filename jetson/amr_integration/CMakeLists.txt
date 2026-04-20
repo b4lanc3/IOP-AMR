@@ -19,6 +19,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   srv/EStop.srv
   srv/BagControl.srv
   srv/SlamControl.srv
+  srv/JoyStackControl.srv
   DEPENDENCIES builtin_interfaces std_msgs
 )
 
@@ -31,6 +32,7 @@ install(PROGRAMS
   scripts/bagger_node
   scripts/estop_node
   scripts/slam_control_node
+  scripts/joy_stack_node
   DESTINATION lib/${PROJECT_NAME}
 )
 

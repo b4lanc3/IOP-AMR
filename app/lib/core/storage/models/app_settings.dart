@@ -17,6 +17,8 @@ class AppSettings {
   bool showGridOnLidar;
   String? activeGamepadProfileId;
   AppLanguage language;
+  /// Gọi service `/amr/joy_stack` trên robot (ros2 launch joy/Flydigi khi bật).
+  bool joyStackRemoteEnabled;
 
   AppSettings({
     this.themeMode = ThemeMode.system,
@@ -28,6 +30,7 @@ class AppSettings {
     this.showGridOnLidar = true,
     this.activeGamepadProfileId,
     this.language = AppLanguage.vietnamese,
+    this.joyStackRemoteEnabled = false,
   });
 
   AppSettings copyWith({
@@ -40,6 +43,7 @@ class AppSettings {
     bool? showGridOnLidar,
     String? activeGamepadProfileId,
     AppLanguage? language,
+    bool? joyStackRemoteEnabled,
   }) =>
       AppSettings(
         themeMode: themeMode ?? this.themeMode,
@@ -52,6 +56,8 @@ class AppSettings {
         activeGamepadProfileId:
             activeGamepadProfileId ?? this.activeGamepadProfileId,
         language: language ?? this.language,
+        joyStackRemoteEnabled:
+            joyStackRemoteEnabled ?? this.joyStackRemoteEnabled,
       );
 }
 
@@ -78,12 +84,13 @@ class AppSettingsAdapter extends TypeAdapter<AppSettings> {
       activeGamepadProfileId: f[7] as String?,
       language: AppLanguage.values[
           langIdx.clamp(0, AppLanguage.values.length - 1)],
+      joyStackRemoteEnabled: (f[9] as bool?) ?? false,
     );
   }
 
   @override
   void write(BinaryWriter w, AppSettings o) {
-    w.writeByte(9);
+    w.writeByte(10);
     w.writeByte(0); w.write(o.themeMode.index);
     w.writeByte(1); w.write(o.units.index);
     w.writeByte(2); w.write(o.defaultMaxLinear);
@@ -93,5 +100,6 @@ class AppSettingsAdapter extends TypeAdapter<AppSettings> {
     w.writeByte(6); w.write(o.showGridOnLidar);
     w.writeByte(7); w.write(o.activeGamepadProfileId);
     w.writeByte(8); w.write(o.language.index);
+    w.writeByte(9); w.write(o.joyStackRemoteEnabled);
   }
 }

@@ -147,6 +147,18 @@ class AppLocalizationsVi extends AppLocalizations {
   String get settingsSectionGamepad => 'Gamepad';
 
   @override
+  String get settingsJoyStackTitle => 'Joy / Flydigi trên robot (USB)';
+
+  @override
+  String get settingsJoyStackSubtitle =>
+      'Bật để Jetson chạy source …/install/setup.bash rồi ros2 launch flydigi flydigi.launch.py. Cần Online.';
+
+  @override
+  String settingsJoyStackError(String error) {
+    return 'Joy stack: $error';
+  }
+
+  @override
   String get settingsNewProfileTooltip => 'Tạo profile mới';
 
   @override

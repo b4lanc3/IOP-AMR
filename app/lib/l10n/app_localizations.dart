@@ -368,6 +368,24 @@ abstract class AppLocalizations {
   /// **'Gamepad'**
   String get settingsSectionGamepad;
 
+  /// No description provided for @settingsJoyStackTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Joy / Flydigi on robot (USB)'**
+  String get settingsJoyStackTitle;
+
+  /// No description provided for @settingsJoyStackSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'On: Jetson runs install/setup.bash then ros2 launch flydigi flydigi.launch.py. Requires Online.'**
+  String get settingsJoyStackSubtitle;
+
+  /// No description provided for @settingsJoyStackError.
+  ///
+  /// In en, this message translates to:
+  /// **'Joy stack: {error}'**
+  String settingsJoyStackError(String error);
+
   /// No description provided for @settingsNewProfileTooltip.
   ///
   /// In en, this message translates to:

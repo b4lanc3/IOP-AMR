@@ -4,6 +4,8 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../core/providers/settings_provider.dart';
+import '../../core/ros/ros_client.dart';
+import '../../core/ros/topics.dart';
 import '../../core/storage/hive_boxes.dart';
 import '../../core/storage/models/app_language.dart';
 import '../../core/storage/models/app_settings.dart';
@@ -30,6 +32,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ? profiles.first
           : GamepadProfile(id: 'none', name: 'none'),
     );
+
+    final rosClient = ref.watch(activeRosClientProvider);
+    final rosStatus = ref.watch(activeRosStatusProvider);
+    final connected = rosClient != null &&
+        (rosStatus.value ?? rosClient.currentStatus) ==
+            RosConnectionStatus.connected;
 
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -167,6 +175,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             onPressed: _createProfile,
           ),
           children: [
+            SwitchListTile(
+              secondary: const Icon(Icons.usb_rounded),
+              title: Text(l10n.settingsJoyStackTitle),
+              subtitle: Text(l10n.settingsJoyStackSubtitle),
+              value: settings.joyStackRemoteEnabled,
+              onChanged: !connected
+                  ? null
+                  : (v) => _applyJoyStackRemote(v, ctrl),
+            ),
             if (profiles.isNotEmpty)
               RadioGroup<String>(
                 groupValue: settings.activeGamepadProfileId ??
@@ -243,6 +260,51 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ),
       ],
     );
+  }
+
+  Future<void> _applyJoyStackRemote(
+    bool wantOn,
+    AppSettingsController ctrl,
+  ) async {
+    final l10n = AppLocalizations.of(context);
+    final prev = ref.read(appSettingsProvider).joyStackRemoteEnabled;
+    ctrl.update((s) => s.copyWith(joyStackRemoteEnabled: wantOn));
+    final client = ref.read(activeRosClientProvider);
+    if (client == null || !client.isConnected) {
+      ctrl.update((s) => s.copyWith(joyStackRemoteEnabled: prev));
+      return;
+    }
+    try {
+      final res = await client.callService(
+        name: RosServices.joyStack,
+        type: RosTypes.joyStackSrv,
+        request: {'enable': wantOn},
+        timeout: const Duration(seconds: 25),
+      );
+      final ok = res != null && res['success'] == true;
+      if (!ok) {
+        ctrl.update((s) => s.copyWith(joyStackRemoteEnabled: prev));
+        final msg = res?['message']?.toString() ?? '';
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                msg.isEmpty
+                    ? l10n.settingsJoyStackError(l10n.statusError)
+                    : msg,
+              ),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      ctrl.update((s) => s.copyWith(joyStackRemoteEnabled: prev));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.settingsJoyStackError(e.toString()))),
+        );
+      }
+    }
   }
 
   Future<void> _createProfile() async {

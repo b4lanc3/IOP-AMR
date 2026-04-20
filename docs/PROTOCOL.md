@@ -54,6 +54,7 @@ URL camera Depth:     `http://<jetson-ip>:8080/stream?topic=/camera/depth/image_
 | `/amr/slam/control` | `amr_integration/srv/SlamControl` | start / stop / save / reset |
 | `/amr/estop` | `amr_integration/srv/EStop` | Engage / release e-stop |
 | `/amr/bag/control` | `amr_integration/srv/BagControl` | start / stop / list rosbag |
+| `/amr/joy_stack` | `amr_integration/srv/JoyStackControl` | Bật/tắt `ros2 launch` joy/Flydigi trên robot (USB receiver) |
 | `/<node>/get_parameters` | `rcl_interfaces/srv/GetParameters` | Đọc param |
 | `/<node>/set_parameters` | `rcl_interfaces/srv/SetParameters` | Tune param live |
 
@@ -117,6 +118,15 @@ string[] bags
 ```
 string action      # "start" | "stop" | "save" | "reset"
 string map_name
+---
+bool success
+string message
+```
+
+### `amr_integration/srv/JoyStackControl`
+
+```
+bool enable        # true = source robot_ws/install/setup.bash + ros2 launch (param), false = dừng tiến trình
 ---
 bool success
 string message

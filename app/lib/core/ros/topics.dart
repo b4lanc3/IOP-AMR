@@ -27,6 +27,7 @@ class RosServices {
   static const slamControl = '/amr/slam/control';
   static const estop = '/amr/estop';
   static const bagControl = '/amr/bag/control';
+  static const joyStack = '/amr/joy_stack';
 
   static String getParameters(String node) => '$node/get_parameters';
   static String setParameters(String node) => '$node/set_parameters';
@@ -63,6 +64,7 @@ class RosTypes {
   static const estopSrv = 'amr_integration/srv/EStop';
   static const bagControlSrv = 'amr_integration/srv/BagControl';
   static const slamControlSrv = 'amr_integration/srv/SlamControl';
+  static const joyStackSrv = 'amr_integration/srv/JoyStackControl';
   static const saveMapSrv = 'slam_toolbox/srv/SaveMap';
   static const setParamsSrv = 'rcl_interfaces/srv/SetParameters';
   static const getParamsSrv = 'rcl_interfaces/srv/GetParameters';

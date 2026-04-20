@@ -14,18 +14,21 @@ amr_integration/
 ├── srv/
 │   ├── EStop.srv            engage/release
 │   ├── BagControl.srv       start/stop/list rosbag2
-│   └── SlamControl.srv      start/stop/save/reset slam_toolbox
+│   ├── SlamControl.srv      start/stop/save/reset slam_toolbox
+│   └── JoyStackControl.srv  app bật/tắt ros2 launch joy/Flydigi trên robot
 ├── amr_integration/         Python nodes
 │   ├── monitor_node.py
 │   ├── bagger_node.py
-│   └── estop_node.py
+│   ├── estop_node.py
+│   └── joy_stack_node.py    service /amr/joy_stack
 ├── scripts/                 entry point (chmod +x required)
 │   ├── monitor_node
 │   ├── bagger_node
-│   └── estop_node
+│   ├── estop_node
+│   └── joy_stack_node
 ├── launch/
 │   ├── bridge.launch.py     rosbridge + rosapi + web_video_server
-│   ├── integration.launch.py monitor + bagger + estop
+│   ├── integration.launch.py monitor + bagger + estop + joy_stack + slam_control
 │   └── full.launch.py       tất cả
 ├── config/
 │   └── rosbridge.yaml

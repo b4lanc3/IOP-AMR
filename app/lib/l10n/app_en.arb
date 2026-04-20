@@ -50,6 +50,14 @@
   "settingsMaxAngular": "Max angular speed",
   "settingsCmdVelHz": "/cmd_vel publish rate",
   "settingsSectionGamepad": "Gamepad",
+  "settingsJoyStackTitle": "Joy / Flydigi on robot (USB)",
+  "settingsJoyStackSubtitle": "On: Jetson runs install/setup.bash then ros2 launch flydigi flydigi.launch.py. Requires Online.",
+  "settingsJoyStackError": "Joy stack: {error}",
+  "@settingsJoyStackError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
   "settingsNewProfileTooltip": "New profile",
   "settingsEditTooltip": "Edit",
   "settingsDeleteTooltip": "Delete",
