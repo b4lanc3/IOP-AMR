@@ -41,8 +41,11 @@ bash scripts/audit_robot_ws.sh ~/robot_ws
 # (3) Cài package amr_integration vào robot_ws
 bash scripts/install_integration.sh ~/robot_ws
 
-# (4) (optional) Auto-start khi boot
-sudo bash scripts/install_systemd.sh
+# (4) (optional) Auto-start khi boot (amr-integration + motor + Flydigi)
+sudo \
+  MOTOR_LAUNCH_CMD="motor motor_launch.py" \
+  FLYDIGI_LAUNCH_CMD="flydigi Flydigi.launch.py" \
+  bash scripts/install_systemd.sh
 ```
 
 ## 3. Chạy thử

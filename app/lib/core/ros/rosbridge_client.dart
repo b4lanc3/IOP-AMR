@@ -30,12 +30,28 @@ class RosbridgeClientOptions {
 
 /// Handle đăng ký subscribe 1 topic — cancel để unsubscribe.
 class RosSubscription {
-  RosSubscription._(this._client, this._topic, this._id, this._controller);
+  RosSubscription._(
+    this._client,
+    this._topic,
+    this._id,
+    this._controller, {
+    required String type,
+    required int throttleRateMs,
+    required int queueLength,
+    String? compression,
+  })  : _type = type,
+        _throttleRateMs = throttleRateMs,
+        _queueLength = queueLength,
+        _compression = compression;
 
   final RosbridgeClient _client;
   final String _topic;
   final String _id;
   final StreamController<Map<String, dynamic>> _controller;
+  final String _type;
+  final int _throttleRateMs;
+  final int _queueLength;
+  final String? _compression;
   bool _closed = false;
 
   Stream<Map<String, dynamic>> get stream => _controller.stream;
@@ -172,10 +188,15 @@ class RosbridgeClient {
 
   void _resubscribeAll() {
     for (final sub in _subscriptions.values) {
+      if (sub._closed) continue;
       _send({
         'op': RosbridgeOp.subscribe,
         'id': sub._id,
         'topic': sub._topic,
+        'type': sub._type,
+        'throttle_rate': sub._throttleRateMs,
+        'queue_length': sub._queueLength,
+        if (sub._compression != null) 'compression': sub._compression,
       });
     }
   }
@@ -374,7 +395,16 @@ class RosbridgeClient {
   }) {
     final id = _nextId('sub');
     final ctrl = StreamController<Map<String, dynamic>>.broadcast();
-    final sub = RosSubscription._(this, topic, id, ctrl);
+    final sub = RosSubscription._(
+      this,
+      topic,
+      id,
+      ctrl,
+      type: type,
+      throttleRateMs: throttleRateMs,
+      queueLength: queueLength,
+      compression: compression,
+    );
     _subscriptions[id] = sub;
     _topicRefCount.update(topic, (v) => v + 1, ifAbsent: () => 1);
     _send({

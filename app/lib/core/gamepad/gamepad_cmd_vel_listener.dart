@@ -15,7 +15,7 @@ import '../storage/models/gamepad_profile.dart';
 import 'flydigi_mapper.dart';
 
 /// Điều khiển từ gamepad (Flydigi, v.v.) → `/cmd_vel` khi đã kết nối ROS.
-/// Chạy ngầm, không cần màn Teleop.
+/// Dùng [GamepadNormalizer] để khớp trục trên Windows (GameInput) / Android.
 class GamepadCmdVelListener extends ConsumerStatefulWidget {
   const GamepadCmdVelListener({super.key, required this.child});
   final Widget child;
@@ -25,9 +25,12 @@ class GamepadCmdVelListener extends ConsumerStatefulWidget {
       _GamepadCmdVelListenerState();
 }
 
-class _GamepadCmdVelListenerState extends ConsumerState<GamepadCmdVelListener> {
+class _GamepadCmdVelListenerState extends ConsumerState<GamepadCmdVelListener>
+    with WidgetsBindingObserver {
   late FlydigiMapper _mapper;
+  final GamepadNormalizer _normalizer = GamepadNormalizer();
   StreamSubscription<GamepadEvent>? _padSub;
+
   Timer? _publishTimer;
 
   bool _estop = false;
@@ -41,9 +44,24 @@ class _GamepadCmdVelListenerState extends ConsumerState<GamepadCmdVelListener> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _mapper = _buildMapper();
     _padSub = Gamepads.events.listen(_onGamepadEvent);
     _restartPublishTimer(ref.read(appSettingsProvider).teleopPublishHz);
+    scheduleMicrotask(_refreshGamepads);
+  }
+
+  Future<void> _refreshGamepads() async {
+    try {
+      await Gamepads.list();
+    } catch (_) {}
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      scheduleMicrotask(_refreshGamepads);
+    }
   }
 
   FlydigiMapper _buildMapper() {
@@ -65,10 +83,7 @@ class _GamepadCmdVelListenerState extends ConsumerState<GamepadCmdVelListener> {
     );
   }
 
-  void _onGamepadEvent(GamepadEvent event) {
-    if (_mapper.update(event)) return;
-    final action = _mapper.detectAction(event);
-    if (action == null) return;
+  void _onGamepadAction(GamepadAction action) {
     switch (action) {
       case GamepadAction.toggleEstop:
         setState(() => _estop = !_estop);
@@ -83,6 +98,21 @@ class _GamepadCmdVelListenerState extends ConsumerState<GamepadCmdVelListener> {
       case GamepadAction.home:
         break;
     }
+  }
+
+  void _onGamepadEvent(GamepadEvent raw) {
+    final normalized = _normalizer.normalize(raw);
+    if (normalized.isNotEmpty) {
+      for (final e in normalized) {
+        if (_mapper.updateNormalized(e)) continue;
+        final a = _mapper.detectActionNormalized(e);
+        if (a != null) _onGamepadAction(a);
+      }
+      return;
+    }
+    if (_mapper.update(raw)) return;
+    final a = _mapper.detectAction(raw);
+    if (a != null) _onGamepadAction(a);
   }
 
   void _publish() {
@@ -134,6 +164,7 @@ class _GamepadCmdVelListenerState extends ConsumerState<GamepadCmdVelListener> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _padSub?.cancel();
     _publishTimer?.cancel();
     super.dispose();

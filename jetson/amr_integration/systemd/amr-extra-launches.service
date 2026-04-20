@@ -1,0 +1,16 @@
+[Unit]
+Description=AMR extra launches (motor + Flydigi)
+After=network-online.target amr-integration.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User={{USER}}
+Environment="ROS_DOMAIN_ID={{ROS_DOMAIN_ID}}"
+ExecStart=/bin/bash -lc 'source /opt/ros/humble/setup.bash && source {{WS_PATH}}/install/setup.bash && echo "[amr-extra] launch motor: {{MOTOR_LAUNCH_CMD}}" && ros2 launch {{MOTOR_LAUNCH_CMD}} & echo "[amr-extra] launch flydigi: {{FLYDIGI_LAUNCH_CMD}}" && ros2 launch {{FLYDIGI_LAUNCH_CMD}} & wait -n'
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=15
+
+[Install]
+WantedBy=multi-user.target

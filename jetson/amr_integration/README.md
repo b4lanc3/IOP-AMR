@@ -30,7 +30,8 @@ amr_integration/
 ├── config/
 │   └── rosbridge.yaml
 └── systemd/
-    └── amr-integration.service
+    ├── amr-integration.service
+    └── amr-extra-launches.service
 ```
 
 ## Build

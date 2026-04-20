@@ -27,12 +27,20 @@ class _MonitoringScreenState extends ConsumerState<MonitoringScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final client = ref.read(activeRosClientProvider);
-      if (client != null &&
-          client.currentStatus == RosConnectionStatus.connected) {
+      final c = ref.read(activeRosClientProvider);
+      if (c != null && c.isConnected && mounted) {
+        _lastStatus = RosConnectionStatus.connected;
         _wire();
       }
     });
+  }
+
+  void _clearSeries() {
+    _cpu.clear();
+    _gpu.clear();
+    _cpuTemp.clear();
+    _ram.clear();
+    _t = 0;
   }
 
   void _wire() {
@@ -76,32 +84,103 @@ class _MonitoringScreenState extends ConsumerState<MonitoringScreen> {
 
   @override
   Widget build(BuildContext context) {
-    ref.listen<AsyncValue<RosConnectionStatus>>(activeRosStatusProvider,
-        (prev, next) {
-      final s = next.value ?? RosConnectionStatus.disconnected;
-      if (s != _lastStatus) {
+    ref.listen<AsyncValue<RosConnectionStatus>>(
+      activeRosStatusProvider,
+      (prev, next) {
+        final s = next.value ?? RosConnectionStatus.disconnected;
+        if (s == _lastStatus) return;
         _lastStatus = s;
         if (s == RosConnectionStatus.connected) {
           _wire();
         } else {
           _sub?.cancel();
           _sub = null;
+          _clearSeries();
+          setState(() {});
         }
-      }
-    });
+      },
+    );
 
-    return GridView.count(
-      padding: const EdgeInsets.all(16),
-      crossAxisCount: 2,
-      mainAxisSpacing: 12,
-      crossAxisSpacing: 12,
-      childAspectRatio: 1.6,
-      children: [
-        _ChartCard(title: 'CPU %',      data: _cpu,     minY: 0, maxY: 100),
-        _ChartCard(title: 'GPU %',      data: _gpu,     minY: 0, maxY: 100),
-        _ChartCard(title: 'RAM %',      data: _ram,     minY: 0, maxY: 100),
-        _ChartCard(title: 'CPU temp °C',data: _cpuTemp, minY: 0, maxY: 110),
-      ],
+    final client = ref.watch(activeRosClientProvider);
+    final status = ref.watch(activeRosStatusProvider).value ??
+        client?.currentStatus ??
+        RosConnectionStatus.disconnected;
+    final online = client != null && status == RosConnectionStatus.connected;
+
+    if (!online) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.cloud_off_outlined,
+                size: 48,
+                color: Theme.of(context).colorScheme.outline,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Chưa kết nối rosbridge',
+                style: Theme.of(context).textTheme.titleMedium,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Kết nối robot ở màn Connection, đợi trạng thái Online rồi '
+                'mở lại Giám sát. Cần topic ${RosTopics.systemStats} trên robot.',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return LayoutBuilder(
+      builder: (context, c) {
+        final cross = c.maxWidth >= 900 ? 2 : 1;
+        return GridView.count(
+          padding: const EdgeInsets.all(16),
+          crossAxisCount: cross,
+          mainAxisSpacing: 12,
+          crossAxisSpacing: 12,
+          childAspectRatio: cross == 2 ? 1.6 : 1.45,
+          children: [
+            _ChartCard(
+              title: 'CPU %',
+              data: _cpu,
+              minY: 0,
+              maxY: 100,
+              color: Colors.teal,
+            ),
+            _ChartCard(
+              title: 'GPU %',
+              data: _gpu,
+              minY: 0,
+              maxY: 100,
+              color: Colors.indigo,
+            ),
+            _ChartCard(
+              title: 'RAM %',
+              data: _ram,
+              minY: 0,
+              maxY: 100,
+              color: Colors.green,
+            ),
+            _ChartCard(
+              title: 'CPU temp °C',
+              data: _cpuTemp,
+              minY: 0,
+              maxY: 110,
+              color: Colors.orange,
+            ),
+          ],
+        );
+      },
     );
   }
 }
@@ -112,15 +191,26 @@ class _ChartCard extends StatelessWidget {
     required this.data,
     required this.minY,
     required this.maxY,
+    required this.color,
   });
 
   final String title;
   final List<FlSpot> data;
   final double minY;
   final double maxY;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
+    final spots = data.isEmpty ? const [FlSpot(0, 0)] : data;
+    double minX = 0;
+    double maxX = 1;
+    if (data.length >= 2) {
+      minX = data.first.x;
+      maxX = data.last.x;
+      if (maxX <= minX) maxX = minX + 1;
+    }
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(12),
@@ -132,14 +222,30 @@ class _ChartCard extends StatelessWidget {
             Expanded(
               child: LineChart(
                 LineChartData(
-                  minY: minY, maxY: maxY,
+                  minX: minX,
+                  maxX: maxX,
+                  minY: minY,
+                  maxY: maxY,
+                  clipData: const FlClipData.all(),
                   titlesData: const FlTitlesData(show: false),
-                  gridData: const FlGridData(show: true),
+                  gridData: FlGridData(
+                    show: true,
+                    drawVerticalLine: false,
+                    getDrawingHorizontalLine: (v) => FlLine(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .outlineVariant
+                          .withValues(alpha: 0.35),
+                      strokeWidth: 1,
+                    ),
+                  ),
                   borderData: FlBorderData(show: false),
                   lineBarsData: [
                     LineChartBarData(
-                      spots: data.isEmpty ? const [FlSpot(0, 0)] : data,
+                      spots: spots,
                       isCurved: true,
+                      color: color,
+                      barWidth: 2,
                       dotData: const FlDotData(show: false),
                     ),
                   ],

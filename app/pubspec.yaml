@@ -30,7 +30,7 @@ dependencies:
   multicast_dns: ^0.3.2
 
   # Input
-  gamepads: ^0.1.2
+  gamepads: ^0.1.10
 
   # Media
   flutter_mjpeg: ^2.0.0

@@ -1,6 +1,9 @@
 # systemd — auto-start khi Jetson boot
 
-Mục tiêu: Jetson vừa boot xong là app Flutter ở xa đã kết nối được (rosbridge + web_video + monitor chạy sẵn).
+Mục tiêu: Jetson vừa boot xong là app Flutter ở xa đã kết nối được, và các launch quan trọng tự bật:
+
+- `amr-integration.service`: rosbridge + web_video + monitor + estop + bagger.
+- `amr-extra-launches.service`: auto chạy 2 launch bổ sung (motor + Flydigi).
 
 ## 1. Cài unit
 
@@ -10,11 +13,22 @@ Chỉ cần chạy 1 lần:
 sudo bash scripts/install_systemd.sh
 ```
 
+Hoặc chỉ định rõ launch command (khuyến nghị):
+
+```bash
+sudo \
+  WS_PATH=/home/$USER/robot_ws \
+  MOTOR_LAUNCH_CMD="motor motor_launch.py" \
+  FLYDIGI_LAUNCH_CMD="flydigi Flydigi.launch.py" \
+  bash scripts/install_systemd.sh
+```
+
 Script sẽ:
 
 1. Copy `amr_integration/systemd/amr-integration.service` → `/etc/systemd/system/`.
-2. Thay thế placeholder `{{USER}}` và `{{WS_PATH}}` bằng user thực tế + path `~/robot_ws`.
-3. `systemctl daemon-reload` + `systemctl enable amr-integration`.
+2. Copy `amr_integration/systemd/amr-extra-launches.service` → `/etc/systemd/system/`.
+3. Thay placeholder `{{USER}}`, `{{WS_PATH}}`, `{{ROS_DOMAIN_ID}}`, launch command.
+4. `systemctl daemon-reload` + enable/start cả 2 service.
 
 ## 2. Thao tác
 
@@ -36,11 +50,17 @@ sudo systemctl disable amr-integration
 
 # Restart sau khi sửa code/rebuild
 sudo systemctl restart amr-integration
+
+# Restart phần motor + Flydigi
+sudo systemctl restart amr-extra-launches
 ```
 
 ## 3. Unit file
 
-Xem [`../amr_integration/systemd/amr-integration.service`](../amr_integration/systemd/amr-integration.service).
+Xem:
+
+- [`../amr_integration/systemd/amr-integration.service`](../amr_integration/systemd/amr-integration.service)
+- [`../amr_integration/systemd/amr-extra-launches.service`](../amr_integration/systemd/amr-extra-launches.service)
 
 Điểm quan trọng:
 
@@ -48,6 +68,7 @@ Xem [`../amr_integration/systemd/amr-integration.service`](../amr_integration/sy
 - `Environment="ROS_DOMAIN_ID=0"` — thay bằng DOMAIN_ID thực tế nếu multi-robot.
 - `ExecStart=` dùng wrapper shell source ROS + workspace rồi mới launch.
 - `Restart=on-failure` + `RestartSec=5` để auto-recover.
+- Service extra dùng `ros2 launch ... & ros2 launch ... & wait -n` để quản lý 2 launch trong 1 unit.
 
 ## 4. Lưu ý bảo mật
 
@@ -63,6 +84,7 @@ Xem [`../amr_integration/systemd/amr-integration.service`](../amr_integration/sy
 
 ```bash
 journalctl -u amr-integration -n 200 --no-pager
+journalctl -u amr-extra-launches -n 200 --no-pager
 ```
 
 Lỗi thường gặp:
