@@ -31,7 +31,7 @@ cd ~/amr-jetson
 
 ## 2. Cài đặt 4 bước
 
-Checklist cold boot, link GitHub đầy đủ và Super Prompt cho Cursor trên Jetson: **[docs/COLD_BOOT_APP_CONTROL.md](docs/COLD_BOOT_APP_CONTROL.md)**.
+Cold boot, link GitHub, hướng dẫn **Cursor trên Jetson tự điền placeholder** (ros2 pkg list, v.v.) và Super Prompt: **[docs/COLD_BOOT_APP_CONTROL.md](docs/COLD_BOOT_APP_CONTROL.md)**.
 
 ```bash
 # (1) Cài deps hệ thống (rosbridge, web_video_server, nav2 bộ extras...)
@@ -83,7 +83,7 @@ jetson/
 │   ├── AUDIT_CHECKLIST.md
 │   ├── NAV2_TUNING.md
 │   ├── SYSTEMD.md
-│   ├── COLD_BOOT_APP_CONTROL.md   ← cold boot + placeholder + prompt Cursor
+│   ├── COLD_BOOT_APP_CONTROL.md   ← Cursor Jetson tự điền placeholder + prompt
 │   ├── WIRING.md
 │   └── TROUBLESHOOTING.md
 ├── scripts/               ← script bash tự động
