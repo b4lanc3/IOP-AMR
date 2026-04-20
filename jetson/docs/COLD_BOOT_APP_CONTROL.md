@@ -1,6 +1,6 @@
 # Cold boot — app điều khiển + systemd (Jetson)
 
-Tài liệu này gom **link GitHub**, **giá trị placeholder chuẩn cho repo IOP-AMR**, và **Super Prompt** để dán vào Cursor trên Jetson. Cập nhật khi đổi tên package/launch trong `robot_ws`.
+Tài liệu này gom **link GitHub**, hướng dẫn **Cursor (Agent) trên Jetson tự điền placeholder** bằng lệnh thật trên máy, và **Super Prompt** để dán vào Cursor. Không giả định tên package/launch — phải xác minh bằng `ros2 pkg list` / workspace thực tế.
 
 ## 1. Link GitHub (bookmark)
 
@@ -20,86 +20,80 @@ Tài liệu này gom **link GitHub**, **giá trị placeholder chuẩn cho repo 
 git clone https://github.com/b4lanc3/IOP-AMR.git ~/IOP-AMR
 ```
 
-## 2. Placeholder đã điền (mặc định repo + `install_systemd.sh`)
+## 2. Cursor bên Jetson tự điền placeholder (không đoán)
 
-Các giá trị dưới đây khớp [README](../README.md), [SYSTEMD.md](SYSTEMD.md) và default trong `install_systemd.sh`. Nếu `robot_ws` của bạn dùng tên package/launch khác, chỉnh lại trước khi chạy `install_systemd.sh`.
+**Nguyên tắc:** Agent mở workspace `~/IOP-AMR` (hoặc path tương đương), chạy lệnh trên **chính Jetson**, rồi **ghi đầy đủ** bảng dưới trước khi đề xuất `install_systemd.sh`.
 
-| Biến | Giá trị điền sẵn | Ghi chú |
-|------|------------------|---------|
-| `ROBOT_WS_PATH` | `$HOME/robot_ws` | Hoặc path tuyệt đối, ví dụ `/home/ubuntu/robot_ws` |
-| `ROS_DOMAIN_ID` | `0` | Đổi nếu nhiều robot trên cùng mạng |
-| `JETSON_IP` | *(lấy trên Jetson)* | Chạy: `hostname -I \| awk '{print $1}'` hoặc `bash ~/IOP-AMR/jetson/scripts/lan_info.sh` |
-| `PKG_MOTOR` | `motor` | |
-| `MOTOR_FILE` | `motor_launch.py` | Hai token systemd: `motor motor_launch.py` |
-| `PKG_EXTRA` | `flydigi` | |
-| `EXTRA_FILE` | `Flydigi.launch.py` | Hai token systemd: `flydigi Flydigi.launch.py` |
-| `EXTRA_DISABLED` | `0` | Đặt `1` nếu không có package Flydigi/joy trên Jetson — khi đó cần cấu hình unit tương ứng (không dùng lệnh giả) |
+| Biến | Cách lấy giá trị (agent tự chạy) |
+|------|-----------------------------------|
+| `ROBOT_WS_PATH` | Hỏi user hoặc tìm `install/setup.bash` (thường `$HOME/robot_ws`). Xác nhận `test -d "$ROBOT_WS_PATH/install"`. |
+| `ROS_DOMAIN_ID` | `echo "${ROS_DOMAIN_ID:-0}"` hoặc đọc từ `/etc/environment`, `~/.bashrc`; mặc định thường `0`. |
+| `JETSON_IP` | `hostname -I \| awk '{print $1}'` hoặc `bash ~/IOP-AMR/jetson/scripts/lan_info.sh`. |
+| `PKG_MOTOR` + file `.launch.py` | `source /opt/ros/humble/setup.bash && source "$ROBOT_WS_PATH/install/setup.bash" && ros2 pkg list` — chỉ chọn package **có thật** chứa launch motor của robot. |
+| `PKG_EXTRA` + file (joy/Flydigi/…) | Cùng bước trên; nếu không có package phù hợp → ghi `EXTRA_DISABLED=1` và **giải thích** (không bịa tên). |
+| `MOTOR_LAUNCH_CMD` | Đúng **hai token**: `package ten_file.launch.py` (khớp `install_systemd.sh`). |
+| `FLYDIGI_LAUNCH_CMD` | Hai token tương tự; nếu không dùng → phải thống nhất với user cách xử lý unit `amr-extra-launches` (không paste chuỗi giả). |
 
-**Lệnh systemd một dòng (copy sau khi đã `cd ~/IOP-AMR/jetson` và đã build `robot_ws`):**
+**Gợi ý mặc định trong script (chỉ là ví dụ README, không thay thế bước xác minh):** `install_systemd.sh` fallback `motor motor_launch.py` và `flydigi Flydigi.launch.py` — chỉ dùng nếu `ros2 pkg list` khớp.
+
+**Sau khi điền**, agent in một khối duy nhất (copy-paste được) rồi mới chạy:
 
 ```bash
-sudo WS_PATH="$HOME/robot_ws" ROS_DOMAIN_ID=0 \
-  MOTOR_LAUNCH_CMD="motor motor_launch.py" \
-  FLYDIGI_LAUNCH_CMD="flydigi Flydigi.launch.py" \
-  bash scripts/install_systemd.sh
+sudo WS_PATH="..." ROS_DOMAIN_ID="..." \
+  MOTOR_LAUNCH_CMD="PKG_MOTOR FILE.launch.py" \
+  FLYDIGI_LAUNCH_CMD="PKG_EXTRA FILE.launch.py" \
+  bash ~/IOP-AMR/jetson/scripts/install_systemd.sh
 ```
 
 ## 3. Hai kênh điều khiển (nhớ khi debug)
 
-1. **App Flutter:** gamepad đọc trên máy chạy app; lệnh qua **rosbridge**. USB receiver cắm Jetson **không** được app đọc.
-2. **Receiver trên Jetson:** cần node ROS (joy / Flydigi / …) + thường **twist_mux**; kiểm tra `/joy`, `/cmd_vel` trên robot.
+1. **App Flutter:** gamepad trên máy chạy app; lệnh qua **rosbridge**. USB receiver trên Jetson **không** được app đọc.
+2. **Receiver trên Jetson:** node ROS (joy / Flydigi / …) + thường **twist_mux**; kiểm tra `/joy`, `/cmd_vel`.
 
 ## 4. Super Prompt — dán vào Cursor (Agent) trên Jetson
 
-Copy từ `---BEGIN---` đến `---END---`. Phần `JETSON_IP` đã ghi cách lấy; các giá trị ROS khớp mục 2.
+Copy từ `---BEGIN---` đến `---END---`. Prompt bắt agent **tự chạy lệnh và điền placeholder** — không hardcode tên package.
 
 ---BEGIN---
 
-**Vai trò:** Bạn là kỹ sư triển khai ROS2 trên NVIDIA Jetson (Ubuntu 22.04, ROS2 Humble). Nhiệm vụ: robot **tự khởi động đầy đủ sau reboot** và **điều khiển được qua app IOP-AMR** trên LAN; hỗ trợ **USB receiver / Flydigi trên Jetson** nếu có trong `robot_ws`.
+**Vai trò:** Bạn là kỹ sư triển khai ROS2 trên NVIDIA Jetson (Ubuntu 22.04, ROS2 Humble). Nhiệm vụ: robot **tự khởi động sau reboot** và **app IOP-AMR** kết nối được qua LAN; hỗ trợ launch motor + (nếu có) joy/Flydigi trên Jetson.
 
-**Repo:** [https://github.com/b4lanc3/IOP-AMR](https://github.com/b4lanc3/IOP-AMR)
+**Repo:** [https://github.com/b4lanc3/IOP-AMR](https://github.com/b4lanc3/IOP-AMR) — ưu tiên đọc `jetson/docs/PROTOCOL.md` và `jetson/docs/SYSTEMD.md` trước khi sửa file.
 
-**Giả định:** `/opt/ros/humble/setup.bash`; `~/robot_ws/install/setup.bash`; IOP-AMR tại `~/IOP-AMR`.
+**Quy tắc bắt buộc:**
 
-**Đọc trước khi sửa:** `~/IOP-AMR/jetson/docs/PROTOCOL.md`, `~/IOP-AMR/jetson/docs/SYSTEMD.md`.
-
-**Mục tiêu sau reboot:** `amr-integration` → `ros2 launch amr_integration full.launch.py`; `amr-extra-launches` → `motor motor_launch.py` và `flydigi Flydigi.launch.py` (đúng format hai token trong `MOTOR_LAUNCH_CMD` / `FLYDIGI_LAUNCH_CMD`).
+1. **Không** điền `MOTOR_LAUNCH_CMD` / `FLYDIGI_LAUNCH_CMD` bằng tên giả. Phải `source /opt/ros/humble/setup.bash && source <robot_ws>/install/setup.bash` rồi dùng `ros2 pkg list` (và khi cần `ros2 launch <pkg> <file> --show-args` hoặc tìm file trong `src/`) để xác định đúng **package** và **tên file launch**.
+2. **Tự điền** `ROBOT_WS_PATH`, `ROS_DOMAIN_ID`, `JETSON_IP` bằng lệnh shell trên Jetson (xem bảng trong `COLD_BOOT_APP_CONTROL.md` mục 2).
+3. Trước khi chạy `sudo ... install_systemd.sh`, in ra **bảng placeholder đã điền đủ** để user xác nhận.
+4. Nếu thiếu package motor hoặc extra: **dừng**, báo rõ, đề xuất bước tiếp theo — không giả vờ cài được.
 
 **Shell ROS:**
 
 ```bash
 source /opt/ros/humble/setup.bash
-source "$HOME/robot_ws/install/setup.bash"
+source "$ROBOT_WS_PATH/install/setup.bash"
 ```
 
-**Checklist:** A) `ros2 pkg list` — xác nhận `motor`, `flydigi` (hoặc báo thiếu và dừng). B) `bash ~/IOP-AMR/jetson/scripts/install_deps.sh` nếu chưa. C) `bash ~/IOP-AMR/jetson/scripts/install_integration.sh ~/robot_ws`. D) Ba terminal: `full.launch.py`, motor, Flydigi — kiểm tra topic `cmd_vel`/`joy`/`amr`; từ máy khác `wscat -c ws://JETSON_IP:9090` với `JETSON_IP=$(hostname -I | awk '{print $1}')` chạy trên Jetson. E) USB: `lsusb`, `/dev/input/`. F) Khi D OK:
+**Checklist:** A) Xác định và ghi `ROBOT_WS_PATH`. B) `install_deps.sh` nếu cần. C) `install_integration.sh "$ROBOT_WS_PATH"`. D) Chạy tay: `full.launch.py`, motor launch, extra launch (nếu có) — kiểm tra topic. E) USB nếu cần. F) Điền biến và chạy `install_systemd.sh`. G) `reboot` + kiểm tra `systemctl` + `journalctl`.
 
-```bash
-cd ~/IOP-AMR/jetson
-sudo WS_PATH="$HOME/robot_ws" ROS_DOMAIN_ID=0 \
-  MOTOR_LAUNCH_CMD="motor motor_launch.py" \
-  FLYDIGI_LAUNCH_CMD="flydigi Flydigi.launch.py" \
-  bash scripts/install_systemd.sh
-```
-
-G) `sudo reboot` → `systemctl is-active amr-integration amr-extra-launches` → `journalctl -u amr-integration -n 80 --no-pager` và `journalctl -u amr-extra-launches -n 80 --no-pager`.
-
-**Placeholder (đã điền cho workspace chuẩn IOP-AMR — chỉnh nếu robot_ws khác):**
+**Khối placeholder — do bạn (agent) điền sau khi chạy lệnh, để trống lúc mới bắt đầu:**
 
 ```
-ROBOT_WS_PATH=$HOME/robot_ws
-ROS_DOMAIN_ID=0
-JETSON_IP=<chạy trên Jetson: hostname -I | awk '{print $1}'>
-PKG_MOTOR=motor
-MOTOR_FILE=motor_launch.py
-PKG_EXTRA=flydigi
-EXTRA_FILE=Flydigi.launch.py
-EXTRA_DISABLED=0
+ROBOT_WS_PATH=
+ROS_DOMAIN_ID=
+JETSON_IP=
+PKG_MOTOR=
+MOTOR_FILE=
+PKG_EXTRA=
+EXTRA_FILE=
+EXTRA_DISABLED=0|1
+MOTOR_LAUNCH_CMD="<hai token: package file.launch.py>"
+FLYDIGI_LAUNCH_CMD="<hai token hoặc NONE nếu không dùng — khi đó thống nhất user>"
 ```
 
 ---END---
 
 ## 5. Xem thêm
 
-- [SYSTEMD.md](SYSTEMD.md) — quản lý service, firewall 9090/8080.
-- [SETUP_JETSON.md](SETUP_JETSON.md) — chạy tay `full.launch.py` trước khi bật systemd.
+- [SYSTEMD.md](SYSTEMD.md) — firewall 9090/8080, restart service.
+- [SETUP_JETSON.md](SETUP_JETSON.md) — chạy tay `full.launch.py`.
